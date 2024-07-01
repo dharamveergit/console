@@ -42,9 +42,20 @@ type Props = {
   setEditedManifest: Dispatch<string>;
   imageList?: string[];
   ssh?: boolean;
+  github?: boolean;
+  setGithub?: Dispatch<boolean>;
 };
 
-export const ManifestEdit: React.FunctionComponent<Props> = ({ editedManifest, setEditedManifest, onTemplateSelected, selectedTemplate, imageList, ssh }) => {
+export const ManifestEdit: React.FunctionComponent<Props> = ({
+  editedManifest,
+  setEditedManifest,
+  onTemplateSelected,
+  selectedTemplate,
+  imageList,
+  ssh,
+  github,
+  setGithub
+}) => {
   const [parsingError, setParsingError] = useState<string | null>(null);
   const [deploymentName, setDeploymentName] = useState("");
   const [isCreatingDeployment, setIsCreatingDeployment] = useState(false);
@@ -360,7 +371,7 @@ export const ManifestEdit: React.FunctionComponent<Props> = ({ editedManifest, s
         </ViewPanel>
       )}
       {(ssh || selectedSdlEditMode === "builder") && (
-        <SdlBuilder sdlString={editedManifest} ref={sdlBuilderRef} setEditedManifest={setEditedManifest} imageList={imageList} ssh={ssh} />
+        <SdlBuilder github={github} sdlString={editedManifest} ref={sdlBuilderRef} setEditedManifest={setEditedManifest} imageList={imageList} ssh={ssh} />
       )}
 
       {isDepositingDeployment && (

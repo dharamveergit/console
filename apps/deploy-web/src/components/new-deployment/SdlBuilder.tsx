@@ -12,12 +12,14 @@ import { generateSdl } from "@src/utils/sdl/sdlGenerator";
 import { importSimpleSdl } from "@src/utils/sdl/sdlImport";
 import { transformCustomSdlFields, TransformError } from "@src/utils/sdl/transformCustomSdlFields";
 import { SimpleServiceFormControl } from "../sdl/SimpleServiceFormControl";
+import GithubDeploy from "./GihubDeploy";
 
 interface Props {
   sdlString: string | null;
   setEditedManifest: Dispatch<string>;
   imageList?: string[];
   ssh?: boolean;
+  github?: boolean;
 }
 
 export type SdlBuilderRefType = {
@@ -25,7 +27,7 @@ export type SdlBuilderRefType = {
   validate: () => Promise<boolean>;
 };
 
-export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlString, setEditedManifest, imageList, ssh }, ref) => {
+export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlString, setEditedManifest, imageList, ssh, github }, ref) => {
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const [isInit, setIsInit] = useState(false);
@@ -122,42 +124,45 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
           <Spinner size="large" />
         </div>
       ) : (
-        <form ref={formRef} autoComplete="off">
-          {_services &&
-            services.map((service, serviceIndex) => (
-              <SimpleServiceFormControl
-                key={service.id}
-                serviceIndex={serviceIndex}
-                gpuModels={gpuModels}
-                setValue={setValue}
-                _services={_services as Service[]}
-                control={control}
-                trigger={trigger}
-                onRemoveService={onRemoveService}
-                serviceCollapsed={serviceCollapsed}
-                setServiceCollapsed={setServiceCollapsed}
-                hasSecretOption={false}
-                imageList={imageList}
-                ssh={ssh}
-              />
-            ))}
+        <>
+          {github && <GithubDeploy setValue={setValue} services={_services as Service[]} />}
+          <form ref={formRef} autoComplete="off">
+            {_services &&
+              services.map((service, serviceIndex) => (
+                <SimpleServiceFormControl
+                  key={service.id}
+                  serviceIndex={serviceIndex}
+                  gpuModels={gpuModels}
+                  setValue={setValue}
+                  _services={_services as Service[]}
+                  control={control}
+                  trigger={trigger}
+                  onRemoveService={onRemoveService}
+                  serviceCollapsed={serviceCollapsed}
+                  setServiceCollapsed={setServiceCollapsed}
+                  hasSecretOption={false}
+                  imageList={imageList}
+                  ssh={ssh}
+                />
+              ))}
 
-          {error && (
-            <Alert variant="destructive" className="mt-4">
-              {error}
-            </Alert>
-          )}
+            {error && (
+              <Alert variant="destructive" className="mt-4">
+                {error}
+              </Alert>
+            )}
 
-          {!ssh && (
-            <div className="flex items-center justify-end pt-4">
-              <div>
-                <Button variant="default" size="sm" type="button" onClick={onAddService}>
-                  Add Service
-                </Button>
+            {!ssh && (
+              <div className="flex items-center justify-end pt-4">
+                <div>
+                  <Button variant="default" size="sm" type="button" onClick={onAddService}>
+                    Add Service
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </form>
+            )}
+          </form>{" "}
+        </>
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Dispatch, useEffect, useState } from "react";
 import { Button, buttonVariants } from "@akashnetwork/ui/components";
-import { ArrowRight, Cpu, Page, Rocket, Wrench } from "iconoir-react";
+import { ArrowRight, Cpu, Github, Page, Rocket, Wrench } from "iconoir-react";
 import { NavArrowLeft } from "iconoir-react";
 import { useAtom } from "jotai";
 import Link from "next/link";
@@ -32,13 +32,19 @@ const previewTemplateIds = [
   "akash-network-awesome-akash-minecraft"
 ];
 
-export const TemplateList: React.FunctionComponent = () => {
+type Props = {
+  setGithub: Dispatch<boolean>;
+};
+export const TemplateList: React.FunctionComponent<Props> = ({ setGithub }) => {
   const { templates } = useTemplates();
   const router = useRouter();
   const [previewTemplates, setPreviewTemplates] = useState<ApiTemplate[]>([]);
   const [, setSdlEditMode] = useAtom(sdlStore.selectedSdlEditMode);
   const previousRoute = usePreviousRoute();
-
+  const handleGithubTemplate = async () => {
+    setGithub(true);
+    router.push(UrlService.newDeployment({ step: RouteStepKeys.editDeployment, type: "github" }));
+  };
   useEffect(() => {
     if (templates) {
       const _previewTemplates = templates.filter(x => previewTemplateIds.some(y => x.id === y));
@@ -103,6 +109,13 @@ export const TemplateList: React.FunctionComponent = () => {
               onClick={() => onSDLBuilderClick("deploy-linux")}
             />
           }
+
+          <DeployOptionBox
+            title={"Github"}
+            description={"Deploy from a Github repository. You can deploy directly from a Github repository by providing the URL."}
+            icon={<Github />}
+            onClick={handleGithubTemplate}
+          />
         </div>
       </div>
 

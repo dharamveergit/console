@@ -133,4 +133,47 @@ deployment:
 `
 };
 
-export const hardcodedTemplates = [sdlBuilderTemplate, helloWorldTemplate, ubuntuTemplate];
+export const github = {
+  title: "GitHub",
+  name: "GitHub",
+  code: "github",
+  category: "General",
+  description: "Get started with a simple linux Ubuntu server!",
+  githubUrl: "",
+  valuesToChange: [],
+  content: `---
+version: "2.0"
+services:
+  service-1:
+    image: hoomanhq/automation:0.202
+    
+    expose:
+      - port: 3000
+        as: 80
+        to:
+          - global: true
+profiles:
+  compute:
+    service-1:
+      resources:
+        cpu:
+          units: 2
+        memory:
+          size: 6GB
+        storage:
+          - size: 10Gi
+  placement:
+    dcloud:
+      pricing:
+        service-1:
+          denom: uakt
+          amount: 1000
+deployment:
+  service-1:
+    dcloud:
+      profile: service-1
+      count: 1
+`
+};
+
+export const hardcodedTemplates = [sdlBuilderTemplate, helloWorldTemplate, ubuntuTemplate, github];
