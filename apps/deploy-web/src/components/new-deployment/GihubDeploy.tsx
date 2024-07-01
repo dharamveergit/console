@@ -122,6 +122,8 @@ export default GithubDeploy;
 
 const Repo = ({ repo, services, setValue, token }) => {
   const selected = services.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo.html_url));
+  console.log(selected);
+  const [packageJson, setPackageJson] = useState<any>(null);
   const { data: branches } = useQuery({
     queryKey: ["branches", repo.full_name],
     queryFn: async () => {
@@ -134,8 +136,26 @@ const Repo = ({ repo, services, setValue, token }) => {
     },
     enabled: !!selected
   });
+  //get data from the branch
+  useQuery({
+    queryKey: ["packageJson", repo.full_name],
+    queryFn: async () => {
+      const response = await axios.get(`https://api.github.com/repos/${repo.full_name}/contents/package.json`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    },
+    enabled: !!selected,
+    onSettled: data => {
+      const content = atob(data.content);
+      const parsed = JSON.parse(content);
+      setPackageJson(parsed);
+    }
+  });
 
-  console.log(branches);
+  console.log(packageJson);
 
   return (
     <div className="flex w-full flex-col gap-6 px-8 py-3">
@@ -155,30 +175,39 @@ const Repo = ({ repo, services, setValue, token }) => {
         </Button>
       </div>
       {selected && (
-        <div className="flex w-full items-center justify-between gap-3">
-          <p>Choose Branch</p>
-          <Select
-            onValueChange={value => {
-              setValue("services.0.env", [
-                { id: nanoid(), key: "REPO_URL", value: repo.html_url, isSecret: false },
-                { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false },
-                { id: nanoid(), key: "ACCESS_TOKEN", value: token, isSecret: true }
-              ]);
-            }}
-          >
-            <SelectTrigger className="ml-1 w-[10rem]">
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {branches?.map((branch: any) => (
-                  <SelectItem key={branch.name} value={branch.name}>
-                    {branch.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+        <div className="mb-4 flex w-full flex-col gap-6 rounded-lg border p-4">
+          <div className="flex w-full items-center justify-between gap-3">
+            <p>Choose Branch</p>
+            <Select
+              onValueChange={value => {
+                setValue("services.0.env", [
+                  { id: nanoid(), key: "REPO_URL", value: repo.html_url, isSecret: false },
+                  { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false },
+                  { id: nanoid(), key: "ACCESS_TOKEN", value: token, isSecret: true }
+                ]);
+              }}
+            >
+              <SelectTrigger className="ml-1 w-[10rem]">
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {branches?.map((branch: any) => (
+                    <SelectItem key={branch.name} value={branch.name}>
+                      {branch.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          {/* name the framework and version of the package.json file from base64 content */}
+          {packageJson && (
+            <div className="flex w-full items-center justify-between gap-3">
+              <p>Framework</p>
+              <p className="capitalize">{packageJson?.scripts?.start?.split(" ")[0]}</p>
+            </div>
+          )}
         </div>
       )}
     </div>
