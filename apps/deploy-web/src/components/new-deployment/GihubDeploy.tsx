@@ -1,11 +1,12 @@
+import { useEffect, useState } from "react";
+import { useMutation, useQuery } from "react-query";
 import { Button, Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Spinner } from "@akashnetwork/ui/components";
 import { Skeleton } from "@mui/material";
-import { Service } from "@src/types";
 import axios from "axios";
 import { Bitbucket, Github, GitlabFull } from "iconoir-react";
 import { nanoid } from "nanoid";
-import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "react-query";
+
+import { Service } from "@src/types";
 
 const GithubDeploy = ({ setValue, services }: { setValue: any; services: Service[] }) => {
   const clientId = "Iv23liZYLYN9I2HrgeOh";
