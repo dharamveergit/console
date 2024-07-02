@@ -344,15 +344,17 @@ export const ManifestEdit: React.FunctionComponent<Props> = ({
             >
               Builder
             </Button>
-            <Button
-              variant={selectedSdlEditMode === "yaml" ? "default" : "outline"}
-              color={selectedSdlEditMode === "yaml" ? "secondary" : "primary"}
-              onClick={() => changeMode("yaml")}
-              size="sm"
-              className="flex-grow rounded-s-none sm:flex-grow-0"
-            >
-              YAML
-            </Button>
+            {!github && (
+              <Button
+                variant={selectedSdlEditMode === "yaml" ? "default" : "outline"}
+                color={selectedSdlEditMode === "yaml" ? "secondary" : "primary"}
+                onClick={() => changeMode("yaml")}
+                size="sm"
+                className="flex-grow rounded-s-none sm:flex-grow-0"
+              >
+                YAML
+              </Button>
+            )}
           </div>
           {!templateId && (
             <>
