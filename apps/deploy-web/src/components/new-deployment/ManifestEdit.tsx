@@ -1,5 +1,4 @@
 "use client";
-import { Dispatch, useEffect, useRef, useState } from "react";
 import { certificateManager } from "@akashnetwork/akashjs/build/certificates/certificate-manager";
 import { Alert, Button, CustomTooltip, InputWithIcon, Spinner } from "@akashnetwork/ui/components";
 import { EncodeObject } from "@cosmjs/proto-signing";
@@ -9,6 +8,7 @@ import { ArrowRight, InfoCircle } from "iconoir-react";
 import { useAtom } from "jotai";
 import { useRouter, useSearchParams } from "next/navigation";
 import { event } from "nextjs-google-analytics";
+import { Dispatch, useEffect, useRef, useState } from "react";
 
 import { useCertificate } from "@src/context/CertificateProvider";
 import { useChainParam } from "@src/context/ChainParamProvider";
@@ -53,15 +53,17 @@ export const ManifestEdit: React.FunctionComponent<Props> = ({
   selectedTemplate,
   imageList,
   ssh,
-  github,
-  setGithub
+  github
 }) => {
+  console.log(ssh);
+
   const [parsingError, setParsingError] = useState<string | null>(null);
   const [deploymentName, setDeploymentName] = useState("");
   const [isCreatingDeployment, setIsCreatingDeployment] = useState(false);
   const [isDepositingDeployment, setIsDepositingDeployment] = useState(false);
   const [isCheckingPrerequisites, setIsCheckingPrerequisites] = useState(false);
   const [selectedSdlEditMode, setSelectedSdlEditMode] = useAtom(sdlStore.selectedSdlEditMode);
+
   const [sdlDenom, setSdlDenom] = useState("uakt");
   const { settings } = useSettings();
   const { address, signAndBroadcastTx } = useWallet();
@@ -275,6 +277,12 @@ export const ManifestEdit: React.FunctionComponent<Props> = ({
 
     setSelectedSdlEditMode(mode);
   };
+
+  useEffect(() => {
+    if (github) {
+      setSelectedSdlEditMode("builder");
+    }
+  }, [github]);
 
   return (
     <>

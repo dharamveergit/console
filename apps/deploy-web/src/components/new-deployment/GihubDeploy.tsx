@@ -1,10 +1,11 @@
-import { Button, Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@akashnetwork/ui/components";
+import { Button, Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Spinner } from "@akashnetwork/ui/components";
+import { Skeleton } from "@mui/material";
 import { Service } from "@src/types";
 import axios from "axios";
 import { Bitbucket, Github, GitlabFull } from "iconoir-react";
 import { nanoid } from "nanoid";
 import { useEffect, useState } from "react";
-import { useQuery } from "react-query";
+import { useMutation, useQuery } from "react-query";
 
 const GithubDeploy = ({ setValue, services }: { setValue: any; services: Service[] }) => {
   const clientId = "Iv23liZYLYN9I2HrgeOh";
@@ -14,53 +15,40 @@ const GithubDeploy = ({ setValue, services }: { setValue: any; services: Service
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}`;
   };
 
-  const [repos, setRepos] = useState([]);
-
-  const fetchRepos = async (t: any) => {
-    try {
-      const response = await fetch("https://api.github.com/user/repos", {
+  const { data: repos, isLoading } = useQuery({
+    queryKey: ["repos"],
+    queryFn: async () => {
+      const response = await axios.get("https://api.github.com/user/repos", {
         headers: {
-          Authorization: `Bearer ${t}`
+          Authorization: `Bearer ${token}`
         }
       });
-      const data = await response.json();
+      return response.data;
+    },
+    onSettled: data => {
       if (data?.message === "Bad credentials") {
         localStorage.removeItem("token");
         setToken(null);
         return;
       }
-      setRepos(data);
-    } catch (e) {
-      console.log(e);
+    },
+    enabled: !!token
+  });
 
-      if (e.message === "Bad credentials") {
-        localStorage.removeItem("token");
-        setToken(null);
-      }
-    }
-  };
-
-  async function fetchAccessToken(code) {
-    try {
-      const response = await fetch("https://proxy-console-github.vercel.app/authenticate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ code })
+  const { mutate: fetchAccessToken } = useMutation({
+    mutationFn: async (code: string) => {
+      const response = await axios.post("https://proxy-console-github.vercel.app/authenticate", {
+        code
       });
-      const data = await response.json();
-      //save token in local storage
-
+      return response.data;
+    },
+    onSuccess: data => {
       setToken(data.access_token);
       if (data.access_token) {
         localStorage.setItem("token", data.access_token);
-        fetchRepos(data.access_token);
       }
-    } catch (error) {
-      console.error(error);
     }
-  }
+  });
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -70,11 +58,8 @@ const GithubDeploy = ({ setValue, services }: { setValue: any; services: Service
     if (code && !token) {
       fetchAccessToken(code);
     }
-    if (token) {
-      fetchRepos(token);
-    }
   }, [token]);
-  //   { id: nanoid(), key: "", value: "", isSecret: false }
+
   console.log(token, repos);
 
   return (
@@ -103,6 +88,16 @@ const GithubDeploy = ({ setValue, services }: { setValue: any; services: Service
           </div>
         </div>
       </div>
+      {isLoading && (
+        <div className="mt-6 flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
+          <h1 className="font-semibold">Repos</h1>
+          <div className="flex flex-col items-center justify-center gap-6 rounded-sm border px-5 py-8">
+            <Skeleton variant="rectangular" width="100%" height={50} className="rounded" />
+            <Skeleton variant="rectangular" width="100%" height={50} className="rounded" />
+            <Skeleton variant="rectangular" width="100%" height={50} className="rounded" />
+          </div>
+        </div>
+      )}
       {repos?.length > 0 && (
         <div className="mt-6 flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
           <h1 className="font-semibold">Repos</h1>
@@ -124,7 +119,7 @@ const Repo = ({ repo, services, setValue, token }) => {
   const selected = services.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo.html_url));
   console.log(selected);
   const [packageJson, setPackageJson] = useState<any>(null);
-  const { data: branches } = useQuery({
+  const { data: branches, isLoading: branchesLoading } = useQuery({
     queryKey: ["branches", repo.full_name],
     queryFn: async () => {
       const response = await axios.get(`https://api.github.com/repos/${repo.full_name}/branches`, {
@@ -149,6 +144,7 @@ const Repo = ({ repo, services, setValue, token }) => {
     },
     enabled: !!selected,
     onSettled: data => {
+      if (data?.content === undefined) return;
       const content = atob(data.content);
       const parsed = JSON.parse(content);
       setPackageJson(parsed);
@@ -178,28 +174,32 @@ const Repo = ({ repo, services, setValue, token }) => {
         <div className="mb-4 flex w-full flex-col gap-6 rounded-lg border p-4">
           <div className="flex w-full items-center justify-between gap-3">
             <p>Choose Branch</p>
-            <Select
-              onValueChange={value => {
-                setValue("services.0.env", [
-                  { id: nanoid(), key: "REPO_URL", value: repo.html_url, isSecret: false },
-                  { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false },
-                  { id: nanoid(), key: "ACCESS_TOKEN", value: token, isSecret: true }
-                ]);
-              }}
-            >
-              <SelectTrigger className="ml-1 w-[10rem]">
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {branches?.map((branch: any) => (
-                    <SelectItem key={branch.name} value={branch.name}>
-                      {branch.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            {branchesLoading ? (
+              <Spinner size="small" />
+            ) : (
+              <Select
+                onValueChange={value => {
+                  setValue("services.0.env", [
+                    { id: nanoid(), key: "REPO_URL", value: repo.html_url, isSecret: false },
+                    { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false },
+                    { id: nanoid(), key: "ACCESS_TOKEN", value: token, isSecret: true }
+                  ]);
+                }}
+              >
+                <SelectTrigger className="ml-1 w-[10rem]">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {branches?.map((branch: any) => (
+                      <SelectItem key={branch.name} value={branch.name}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
           </div>
           {/* name the framework and version of the package.json file from base64 content */}
           {packageJson && (
