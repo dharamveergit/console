@@ -125,7 +125,7 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
         </div>
       ) : (
         <>
-          {github && <GithubDeploy setValue={setValue} services={_services as Service[]} />}
+          {github && <GithubDeploy setValue={setValue} services={_services as Service[]} control={control} />}
           <form ref={formRef} autoComplete="off">
             {_services &&
               services.map((service, serviceIndex) => (

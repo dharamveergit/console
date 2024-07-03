@@ -23,8 +23,11 @@ import { Bitbucket, Github, GithubCircle, GitlabFull, Lock, NavArrowDown } from 
 import { nanoid } from "nanoid";
 
 import { Service } from "@src/types";
+import { EnvFormModal } from "../remote-deploy/EnvFormModal";
+import { hiddenEnv } from "../remote-deploy/utils";
+import { EnvVarList } from "../sdl/EnvVarList";
 
-const GithubDeploy = ({ setValue, services }: { setValue: any; services: Service[] }) => {
+const GithubDeploy = ({ setValue, services, control }: { setValue: any; services: Service[]; control: any }) => {
   const clientId = "Iv23liZYLYN9I2HrgeOh";
   const redirectUri = "http://localhost:3000/new-deployment?step=edit-deployment&type=github";
   const [token, setToken] = useState(localStorage.getItem("token") || null);
@@ -126,6 +129,7 @@ const GithubDeploy = ({ setValue, services }: { setValue: any; services: Service
         </div>
       </div>{" "}
       <Details services={services} setValue={setValue} />
+      <Advanced services={services} control={control} />
     </>
   );
 };
@@ -156,6 +160,55 @@ const Details = ({ services, setValue }) => {
               <CustomInput label="Build Directory" description="The Repository Branch used for your private service" placeholder="eg. anything" />
               <CustomInput label="Build Command" description="A unique name for your web service." placeholder="$ yarn" />
               <CustomInput label="Start Command" description="The Repository Branch used for your private service" placeholder="$ yarn start" />
+            </div>
+          </CollapsibleContent>
+        </CardContent>
+      </Card>
+    </Collapsible>
+  );
+};
+const Advanced = ({ services, control }) => {
+  const serviceIndex = 0;
+  const [expanded, setExpanded] = useState(false);
+  const currentService = services[serviceIndex];
+  console.log(currentService);
+  const [isEditingEnv, setIsEditingEnv] = useState<number | boolean | null>(null);
+  const _isEditingEnv = serviceIndex === isEditingEnv;
+  return (
+    <Collapsible
+      open={expanded}
+      onOpenChange={value => {
+        setExpanded(value);
+      }}
+    >
+      <Card className="mt-4 rounded-sm border border-muted-foreground/20">
+        <CardContent className="p-0">
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center justify-between p-4">
+              <h1 className="font-semibold">Advanced</h1>
+              <NavArrowDown fontSize="1rem" className={cn("transition-all duration-100", { ["rotate-180"]: expanded })} />
+            </div>
+          </CollapsibleTrigger>
+          {expanded && <Separator />}
+          <CollapsibleContent>
+            <div className="p-5">
+              {_isEditingEnv && (
+                <EnvFormModal
+                  control={control}
+                  onClose={() => setIsEditingEnv(null)}
+                  serviceIndex={serviceIndex}
+                  envs={currentService.env || []}
+                  // hasSecretOption={hasSecretOption}
+                />
+              )}
+              <EnvVarList
+                currentService={{
+                  ...currentService,
+                  env: currentService.env.filter(e => !hiddenEnv.includes(e.key)) as { key: string; value: string }[]
+                }}
+                setIsEditingEnv={setIsEditingEnv}
+                serviceIndex={serviceIndex}
+              />
             </div>
           </CollapsibleContent>
         </CardContent>
