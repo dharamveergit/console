@@ -8,7 +8,6 @@ import { nanoid } from "nanoid";
 import { EnvironmentVariable, RentGpusFormValues, SdlBuilderFormValues } from "@src/types";
 import { cn } from "@src/utils/styleUtils";
 import { FormPaper } from "../sdl/FormPaper";
-import { Popup } from "../shared/Popup";
 import { hiddenEnv } from "./utils";
 
 type Props = {
@@ -41,47 +40,10 @@ export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceI
     appendEnv({ id: nanoid(), key: "", value: "", isSecret: false });
   };
 
-  const _onClose = () => {
-    const _envToRemove: number[] = [];
-
-    _envs.forEach((e, i) => {
-      if (!e.key.trim()) {
-        _envToRemove.push(i);
-      }
-    });
-
-    removeEnv(_envToRemove);
-
-    onClose();
-  };
-
   return (
-    <Popup
-      fullWidth
-      open
-      variant="custom"
-      title="Edit Environment Variables"
-      actions={[
-        {
-          label: "Close",
-          color: "primary",
-          variant: "ghost",
-          side: "left",
-          onClick: _onClose
-        },
-        {
-          label: "Add Variable",
-          color: "secondary",
-          variant: "default",
-          side: "right",
-          onClick: onAddEnv
-        }
-      ]}
-      onClose={_onClose}
-      maxWidth="md"
-      enableCloseOnBackdropClick
-    >
-      <FormPaper contentClassName="bg-popover">
+    <div className="flex flex-col gap-3 rounded border p-4">
+      <h1 className="text-sm font-bold">Environment Variables</h1>
+      <FormPaper contentClassName=" ">
         {envs.map((env, envIndex) => {
           return (
             <div key={env.id} className={cn("flex", { ["mb-2"]: envIndex + 1 !== envs.length }, { ["hidden"]: hiddenEnv.includes(env.key) })}>
@@ -160,6 +122,9 @@ export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceI
           );
         })}
       </FormPaper>
-    </Popup>
+      <Button onClick={onAddEnv} size="sm" variant="default" className="w-min">
+        Add Variable
+      </Button>
+    </div>
   );
 };

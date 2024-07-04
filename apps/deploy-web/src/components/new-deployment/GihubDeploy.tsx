@@ -192,22 +192,12 @@ const Advanced = ({ services, control }) => {
           {expanded && <Separator />}
           <CollapsibleContent>
             <div className="p-5">
-              {_isEditingEnv && (
-                <EnvFormModal
-                  control={control}
-                  onClose={() => setIsEditingEnv(null)}
-                  serviceIndex={serviceIndex}
-                  envs={currentService.env || []}
-                  // hasSecretOption={hasSecretOption}
-                />
-              )}
-              <EnvVarList
-                currentService={{
-                  ...currentService,
-                  env: currentService.env.filter(e => !hiddenEnv.includes(e.key)) as { key: string; value: string }[]
-                }}
-                setIsEditingEnv={setIsEditingEnv}
+              <EnvFormModal
+                control={control}
+                onClose={() => setIsEditingEnv(null)}
                 serviceIndex={serviceIndex}
+                envs={currentService.env || []}
+                // hasSecretOption={hasSecretOption}
               />
             </div>
           </CollapsibleContent>
