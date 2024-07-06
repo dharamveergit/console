@@ -62,6 +62,7 @@ type Props = {
   hasSecretOption?: boolean;
   imageList?: string[];
   ssh?: boolean;
+  github?: boolean;
 };
 
 export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
@@ -76,7 +77,8 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
   gpuModels,
   hasSecretOption,
   imageList,
-  ssh
+  ssh,
+  github
 }) => {
   const [isEditingCommands, setIsEditingCommands] = useState<number | boolean | null>(null);
   const [isEditingEnv, setIsEditingEnv] = useState<number | boolean | null>(null);
@@ -293,6 +295,7 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
                               placeholder="Example: mydockerimage:1.01"
                               color="secondary"
                               // error={!!fieldState.error}
+                              disabled={github}
                               error={fieldState.error?.message}
                               className="flex-grow"
                               value={field.value}
@@ -356,9 +359,11 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
                       </FormPaper>
                     )}
 
-                    <div>
-                      <EnvVarList currentService={currentService} setIsEditingEnv={setIsEditingEnv} serviceIndex={serviceIndex} ssh={ssh} />
-                    </div>
+                    {!github && (
+                      <div>
+                        <EnvVarList currentService={currentService} setIsEditingEnv={setIsEditingEnv} serviceIndex={serviceIndex} ssh={ssh} />
+                      </div>
+                    )}
 
                     {!ssh && (
                       <div>

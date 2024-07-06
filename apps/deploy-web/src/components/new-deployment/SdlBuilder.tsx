@@ -1,9 +1,9 @@
 "use client";
-import React, { Dispatch, useEffect, useRef, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
 import { Alert, Button, Spinner } from "@akashnetwork/ui/components";
 import cloneDeep from "lodash/cloneDeep";
 import { nanoid } from "nanoid";
+import React, { Dispatch, useEffect, useRef, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
 
 import { useGpuModels } from "@src/queries/useGpuQuery";
 import { SdlBuilderFormValues, Service } from "@src/types";
@@ -143,6 +143,7 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
                   hasSecretOption={false}
                   imageList={imageList}
                   ssh={ssh}
+                  github={github}
                 />
               ))}
 

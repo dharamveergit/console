@@ -71,7 +71,7 @@ export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceI
                   render={({ field }) => (
                     <div className="ml-2 flex-grow">
                       <FormInput
-                        type="text"
+                        type="password"
                         label="Value"
                         color="secondary"
                         value={field.value}
