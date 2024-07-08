@@ -15,11 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
   Separator,
-  Spinner
+  Spinner,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
 } from "@akashnetwork/ui/components";
 import { cn } from "@akashnetwork/ui/utils";
 import axios, { AxiosError } from "axios";
 import { Bitbucket, Github, GithubCircle, GitlabFull, Lock, NavArrowDown } from "iconoir-react";
+import { set } from "lodash";
 import { nanoid } from "nanoid";
 
 import { Service } from "@src/types";
@@ -28,6 +33,8 @@ import { hiddenEnv } from "../remote-deploy/utils";
 import { EnvVarList } from "../sdl/EnvVarList";
 
 const GithubDeploy = ({ setValue, services, control }: { setValue: any; services: Service[]; control: any }) => {
+  console.log(services);
+
   const clientId = "Iv23liZYLYN9I2HrgeOh";
   const redirectUri = "http://localhost:3000/new-deployment?step=edit-deployment&type=github";
   const [token, setToken] = useState(localStorage.getItem("token") || null);
@@ -68,6 +75,21 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
     enabled: !!token
   });
 
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile", token],
+    queryFn: async () => {
+      const response = await axios.get("https://api.github.com/user", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    },
+    enabled: !!token
+  });
+
+  console.log(userProfile);
+
   const { mutate: fetchAccessToken } = useMutation({
     mutationFn: async (code: string) => {
       const response = await axios.post("https://proxy-console-github.vercel.app/authenticate", {
@@ -76,12 +98,16 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
       return response.data;
     },
     onSuccess: data => {
+      console.log(data);
+
       setToken(data.access_token);
       if (data.access_token) {
         localStorage.setItem("token", data.access_token);
       }
     }
   });
+
+  const [selectedTab, setSelectedTab] = useState("git");
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -102,31 +128,71 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
         <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
           <h1 className="font-semibold">Source Code</h1>
 
-          <div className="flex flex-col items-center justify-center gap-6 rounded-sm border py-8">
-            <div className="flex flex-col items-center justify-center">
-              <h1 className="text-lg font-bold text-primary">Connect Account</h1>
-              <p className="text-sm text-muted-foreground">Connect your GitHub account to use the GitHub integration.</p>
-            </div>
-            <div className="flex gap-3">
-              <Button variant="outline" className="">
-                <Bitbucket className="mr-2" />
-                Bitbucket
-              </Button>
-              <Button variant="outline" className="">
-                <GitlabFull className="mr-2" />
-                GitLab
-              </Button>
-              <Button onClick={handleLogin} variant="outline" className="">
-                <Github className="mr-2" />
-                Github
-              </Button>
-            </div>
+          {
+            <Tabs
+              onValueChange={value => {
+                setSelectedTab(value);
+                setValue("services.0.env", []);
+              }}
+              defaultValue="git"
+            >
+              <TabsList>
+                <TabsTrigger value="git">Git Provider</TabsTrigger>
+                <TabsTrigger value="public">Public Git Repository</TabsTrigger>
+              </TabsList>
+              <TabsContent value="git">
+                {" "}
+                {token ? (
+                  <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
+                    <h1 className="text-2xl font-semibold text-primary">Welcome, {userProfile?.login}</h1>
+                    <p className="text-muted-foreground">Let’s Configure and Deploy your new web service</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-6 rounded-sm border py-8">
+                    <div className="flex flex-col items-center justify-center">
+                      <h1 className="text-lg font-bold text-primary">Connect Account</h1>
+                      <p className="text-sm text-muted-foreground">Connect your GitHub account to use the GitHub integration.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button variant="outline" className="">
+                        <Bitbucket className="mr-2" />
+                        Bitbucket
+                      </Button>
+                      <Button variant="outline" className="">
+                        <GitlabFull className="mr-2" />
+                        GitLab
+                      </Button>
+                      <Button onClick={handleLogin} variant="outline" className="">
+                        <Github className="mr-2" />
+                        Github
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="public" className="flex flex-col gap-6">
+                <CustomInput
+                  label="Repository URL"
+                  description="The Repository Branch used for your private service"
+                  placeholder="eg. anything"
+                  onChange={e => appendEnv("REPO_URL", e.target.value, false, setValue, services)}
+                />
+                <CustomInput
+                  label="Branch Name"
+                  description="The Repository Branch used for your private service"
+                  placeholder="eg. anything"
+                  onChange={e => appendEnv("BRANCH_NAME", e.target.value, false, setValue, services)}
+                />
+              </TabsContent>
+            </Tabs>
+          }
+        </div>
+        {selectedTab === "git" && (
+          <div className="grid grid-cols-2 gap-6">
+            <Repos repos={repos} setValue={setValue} token={token} isLoading={isLoading} />
+            <Branches repos={repos} services={services} setValue={setValue} token={token} />
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <Repos repos={repos} setValue={setValue} token={token} isLoading={isLoading} />
-          <Branches repos={repos} services={services} setValue={setValue} token={token} />
-        </div>
+        )}
       </div>{" "}
       <Details services={services} setValue={setValue} />
       <Advanced services={services} control={control} />
@@ -136,8 +202,27 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
 
 export default GithubDeploy;
 
+function appendEnv(key: string, value: string, isSecret: boolean, setValue: any, services: Service[]) {
+  const previousEnv = services[0]?.env || [];
+  if (previousEnv.find(e => e.key === key)) {
+    previousEnv.map(e => {
+      if (e.key === key) {
+        e.value = value;
+        e.isSecret = isSecret;
+
+        return e;
+      }
+      return e;
+    });
+  } else {
+    previousEnv.push({ id: nanoid(), key, value, isSecret });
+  }
+  setValue("services.0.env", previousEnv);
+}
+
 const Details = ({ services, setValue }) => {
   const [expanded, setExpanded] = useState(false);
+
   return (
     <Collapsible
       open={expanded}
@@ -155,11 +240,37 @@ const Details = ({ services, setValue }) => {
           </CollapsibleTrigger>
           {expanded && <Separator />}
           <CollapsibleContent>
-            <div className="grid grid-cols-2 gap-6 p-5">
-              <CustomInput label="Root Directory" description="A unique name for your web service." placeholder="eg. src" />
-              <CustomInput label="Build Directory" description="The Repository Branch used for your private service" placeholder="eg. anything" />
-              <CustomInput label="Build Command" description="A unique name for your web service." placeholder="$ yarn" />
-              <CustomInput label="Start Command" description="The Repository Branch used for your private service" placeholder="$ yarn start" />
+            <div className="grid gap-6 p-5 md:grid-cols-2">
+              <CustomInput
+                onChange={e => appendEnv("BUILD_DIRECTORY", e.target.value, false, setValue, services)}
+                label="Build Directory"
+                description="The Repository Branch used for your private service"
+                placeholder="eg. anything"
+              />
+              <CustomInput
+                onChange={e => appendEnv("BUILD_COMMAND", e.target.value, false, setValue, services)}
+                label="Build Command"
+                description="A unique name for your web service."
+                placeholder="$ yarn"
+              />
+              <CustomInput
+                onChange={e => appendEnv("CUSTOM_SRC", e.target.value, false, setValue, services)}
+                label="Start Command"
+                description="The Repository Branch used for your private service"
+                placeholder="$ yarn start"
+              />
+              <CustomInput
+                onChange={e => appendEnv("NODE_VERSION", e.target.value, false, setValue, services)}
+                label="Node Version"
+                description="The Repository Branch used for your private service"
+                placeholder="14"
+              />
+              <CustomInput
+                onChange={e => appendEnv("COMMIT_HASH", e.target.value, false, setValue, services)}
+                label="Commit Hash"
+                description="The Repository Branch used for your private service"
+                placeholder="eg. anything"
+              />
             </div>
           </CollapsibleContent>
         </CardContent>
@@ -207,14 +318,24 @@ const Advanced = ({ services, control }) => {
   );
 };
 
-const CustomInput = ({ label, description, placeholder }: { label: string; description: string; placeholder: string }) => {
+const CustomInput = ({
+  label,
+  description,
+  placeholder,
+  onChange
+}: {
+  label: string;
+  description: string;
+  placeholder: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) => {
   return (
     <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
       <div className="flex flex-col gap-2">
         <h1 className="font-semibold">{label}</h1>
         <p className="text-muted-foreground">{description}</p>
       </div>
-      <Input placeholder={placeholder} />
+      <Input onChange={onChange} placeholder={placeholder} />
     </div>
   );
 };
@@ -269,8 +390,8 @@ const Repos = ({ repos, setValue, token, isLoading }) => {
 };
 
 const Branches = ({ repos, services, setValue, token }) => {
-  const repo = repos?.find(r => r.html_url === services[0]?.env?.find(e => e.key === "REPO_URL")?.value);
-  const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo.html_url));
+  const repo = repos?.find(r => r?.html_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
+  const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo?.html_url));
   console.log(selected);
   const [packageJson, setPackageJson] = useState<any>(null);
   const { data: branches, isLoading: branchesLoading } = useQuery({
