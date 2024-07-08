@@ -70,21 +70,21 @@ function getApiMainnetUrl() {
   if (process.env.API_MAINNET_BASE_URL) return process.env.API_MAINNET_BASE_URL;
   if (typeof window === "undefined") return "http://localhost:3080";
   if (productionHostnames.includes(window.location?.hostname)) return productionMainnetApiUrl;
-  return "https://api.cloudmos.io";
+  return "http://localhost:3080";
 }
 
 function getApiTestnetUrl() {
   if (process.env.API_TESTNET_BASE_URL) return process.env.API_TESTNET_BASE_URL;
   if (typeof window === "undefined") return "http://localhost:3080";
   if (productionHostnames.includes(window.location?.hostname)) return productionTestnetApiUrl;
-  return "https://api.cloudmos.io";
+  return "http://localhost:3080";
 }
 
 function getApiSandboxUrl() {
   if (process.env.API_SANDBOX_BASE_URL) return process.env.API_SANDBOX_BASE_URL;
   if (typeof window === "undefined") return "http://localhost:3080";
   if (productionHostnames.includes(window.location?.hostname)) return productionSandboxApiUrl;
-  return "https://api.cloudmos.io";
+  return "http://localhost:3080";
 }
 
 function getApiUrl() {
@@ -99,7 +99,7 @@ function getApiUrl() {
       return productionMainnetApiUrl;
     }
   }
-  return "https://api.cloudmos.io";
+  return "http://localhost:3080";
 }
 
 function getStatsAppUrl() {
