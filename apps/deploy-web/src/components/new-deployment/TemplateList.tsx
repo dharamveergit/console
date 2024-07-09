@@ -99,6 +99,7 @@ export const TemplateList: React.FunctionComponent<Props> = ({ setGithub }) => {
             description="With our new SDL Builder, you can create your own SDL from scratch in a few clicks!"
             icon={<Wrench />}
             onClick={() => onSDLBuilderClick()}
+            testId="build-template-card"
           />
 
           {
@@ -107,6 +108,7 @@ export const TemplateList: React.FunctionComponent<Props> = ({ setGithub }) => {
               description="Choose from multiple linux distros. Deploy and SSH into it. Install and run what you want after."
               icon={<Page />}
               onClick={() => onSDLBuilderClick("deploy-linux")}
+              testId="plain-linux-card"
             />
           }
 

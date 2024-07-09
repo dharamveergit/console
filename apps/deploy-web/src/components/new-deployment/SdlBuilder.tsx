@@ -1,10 +1,11 @@
 "use client";
+import React, { Dispatch, useEffect, useRef, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
 import { Alert, Button, Spinner } from "@akashnetwork/ui/components";
 import cloneDeep from "lodash/cloneDeep";
 import { nanoid } from "nanoid";
-import React, { Dispatch, useEffect, useRef, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
 
+import { useSdlBuilder } from "@src/context/SdlBuilderProvider/SdlBuilderProvider";
 import { useGpuModels } from "@src/queries/useGpuQuery";
 import { SdlBuilderFormValues, Service } from "@src/types";
 import { defaultService, defaultSshVMService } from "@src/utils/sdl/data";
@@ -17,8 +18,6 @@ import GithubDeploy from "./GihubDeploy";
 interface Props {
   sdlString: string | null;
   setEditedManifest: Dispatch<string>;
-  imageList?: string[];
-  ssh?: boolean;
   github?: boolean;
 }
 
@@ -27,13 +26,14 @@ export type SdlBuilderRefType = {
   validate: () => Promise<boolean>;
 };
 
-export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlString, setEditedManifest, imageList, ssh, github }, ref) => {
+export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlString, setEditedManifest, github }, ref) => {
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const [isInit, setIsInit] = useState(false);
+  const { hasComponent } = useSdlBuilder();
   const { control, trigger, watch, setValue } = useForm<SdlBuilderFormValues>({
     defaultValues: {
-      services: [cloneDeep(ssh ? defaultSshVMService : defaultService)]
+      services: [cloneDeep(hasComponent("ssh") ? defaultSshVMService : defaultService)]
     }
   });
   const {
@@ -80,7 +80,7 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
 
   const getSdl = () => {
     try {
-      return generateSdl(transformCustomSdlFields(_services, { withSSH: ssh }));
+      return generateSdl(transformCustomSdlFields(_services, { withSSH: hasComponent("ssh") }));
     } catch (err) {
       if (err instanceof TransformError) {
         setError(err.message);
@@ -141,8 +141,6 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
                   serviceCollapsed={serviceCollapsed}
                   setServiceCollapsed={setServiceCollapsed}
                   hasSecretOption={false}
-                  imageList={imageList}
-                  ssh={ssh}
                   github={github}
                 />
               ))}
@@ -153,7 +151,7 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
               </Alert>
             )}
 
-            {!ssh && (
+            {!hasComponent("ssh") && (
               <div className="flex items-center justify-end pt-4">
                 <div>
                   <Button variant="default" size="sm" type="button" onClick={onAddService}>
@@ -162,7 +160,7 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
                 </div>
               </div>
             )}
-          </form>{" "}
+          </form>
         </>
       )}
     </div>
