@@ -19,7 +19,7 @@ type Props = {
   children?: ReactNode;
 };
 
-export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceIndex, envs: _envs, onClose, hasSecretOption = true }) => {
+export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceIndex, envs: _envs, hasSecretOption = true }) => {
   const {
     fields: envs,
     remove: removeEnv,

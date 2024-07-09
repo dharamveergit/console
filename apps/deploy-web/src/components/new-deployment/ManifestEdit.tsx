@@ -332,7 +332,7 @@ export const ManifestEdit: React.FunctionComponent<Props> = ({
         </div>
       </div>
 
-      {!ssh && (
+      {!ssh && !github && (
         <div className="mb-2 flex gap-2">
           <div className="flex items-center">
             <Button
@@ -344,17 +344,16 @@ export const ManifestEdit: React.FunctionComponent<Props> = ({
             >
               Builder
             </Button>
-            {!github && (
-              <Button
-                variant={selectedSdlEditMode === "yaml" ? "default" : "outline"}
-                color={selectedSdlEditMode === "yaml" ? "secondary" : "primary"}
-                onClick={() => changeMode("yaml")}
-                size="sm"
-                className="flex-grow rounded-s-none sm:flex-grow-0"
-              >
-                YAML
-              </Button>
-            )}
+
+            <Button
+              variant={selectedSdlEditMode === "yaml" ? "default" : "outline"}
+              color={selectedSdlEditMode === "yaml" ? "secondary" : "primary"}
+              onClick={() => changeMode("yaml")}
+              size="sm"
+              className="flex-grow rounded-s-none sm:flex-grow-0"
+            >
+              YAML
+            </Button>
           </div>
           {!templateId && (
             <>

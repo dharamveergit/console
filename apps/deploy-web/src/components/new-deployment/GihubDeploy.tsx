@@ -1,36 +1,16 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "react-query";
-import {
-  Button,
-  Card,
-  CardContent,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-  Input,
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Separator,
-  Spinner,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger
-} from "@akashnetwork/ui/components";
-import { cn } from "@akashnetwork/ui/utils";
+import { Button, Spinner, Tabs, TabsContent, TabsList, TabsTrigger } from "@akashnetwork/ui/components";
 import axios, { AxiosError } from "axios";
-import { Bitbucket, Github, GithubCircle, GitlabFull, Lock, NavArrowDown } from "iconoir-react";
-import { set } from "lodash";
-import { nanoid } from "nanoid";
+import { Bitbucket, Github, GitlabFull } from "iconoir-react";
 
 import { Service } from "@src/types";
-import { EnvFormModal } from "../remote-deploy/EnvFormModal";
-import { hiddenEnv } from "../remote-deploy/utils";
-import { EnvVarList } from "../sdl/EnvVarList";
+import Advanced from "../remote-deploy/Advanced";
+import Branches from "../remote-deploy/Branches";
+import CustomInput from "../remote-deploy/CustomInput";
+import Details from "../remote-deploy/Details";
+import Repos from "../remote-deploy/Repos";
+import { appendEnv } from "../remote-deploy/utils";
 
 const GithubDeploy = ({ setValue, services, control }: { setValue: any; services: Service[]; control: any }) => {
   console.log(services);
@@ -57,7 +37,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
         console.log("Bad credentials");
         localStorage.removeItem("token");
         setToken(null);
-        handleLogin();
+        refreshToken();
         return;
       }
     },
@@ -75,7 +55,24 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
     enabled: !!token
   });
 
-  const { data: userProfile } = useQuery({
+  const { mutate: refreshToken, isLoading: refreshingToken } = useMutation({
+    mutationFn: async () => {
+      const response = await axios.post("https://proxy-console-github.vercel.app/refresh", {
+        refreshToken: token
+      });
+      return response.data;
+    },
+    onSuccess: data => {
+      console.log(data);
+
+      setToken(data.access_token);
+      if (data.access_token) {
+        localStorage.setItem("token", data.access_token);
+      }
+    }
+  });
+
+  const { data: userProfile, isLoading: fetchingProfile } = useQuery({
     queryKey: ["userProfile", token],
     queryFn: async () => {
       const response = await axios.get("https://api.github.com/user", {
@@ -90,7 +87,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
 
   console.log(userProfile);
 
-  const { mutate: fetchAccessToken } = useMutation({
+  const { mutate: fetchAccessToken, isLoading: fetchingToken } = useMutation({
     mutationFn: async (code: string) => {
       const response = await axios.post("https://proxy-console-github.vercel.app/authenticate", {
         code
@@ -142,7 +139,12 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
               </TabsList>
               <TabsContent value="git">
                 {" "}
-                {token ? (
+                {fetchingToken || refreshingToken || fetchingProfile ? (
+                  <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
+                    <Spinner size="large" />
+                    <p className="text-muted-foreground">Loading...</p>
+                  </div>
+                ) : token ? (
                   <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
                     <h1 className="text-2xl font-semibold text-primary">Welcome, {userProfile?.login}</h1>
                     <p className="text-muted-foreground">Let’s Configure and Deploy your new web service</p>
@@ -201,275 +203,3 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
 };
 
 export default GithubDeploy;
-
-function appendEnv(key: string, value: string, isSecret: boolean, setValue: any, services: Service[]) {
-  const previousEnv = services[0]?.env || [];
-  if (previousEnv.find(e => e.key === key)) {
-    previousEnv.map(e => {
-      if (e.key === key) {
-        e.value = value;
-        e.isSecret = isSecret;
-
-        return e;
-      }
-      return e;
-    });
-  } else {
-    previousEnv.push({ id: nanoid(), key, value, isSecret });
-  }
-  setValue("services.0.env", previousEnv);
-}
-
-const Details = ({ services, setValue }) => {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <Collapsible
-      open={expanded}
-      onOpenChange={value => {
-        setExpanded(value);
-      }}
-    >
-      <Card className="mt-4 rounded-sm border border-muted-foreground/20">
-        <CardContent className="p-0">
-          <CollapsibleTrigger asChild>
-            <div className="flex items-center justify-between p-4">
-              <h1 className="font-semibold">Details</h1>
-              <NavArrowDown fontSize="1rem" className={cn("transition-all duration-100", { ["rotate-180"]: expanded })} />
-            </div>
-          </CollapsibleTrigger>
-          {expanded && <Separator />}
-          <CollapsibleContent>
-            <div className="grid gap-6 p-5 md:grid-cols-2">
-              <CustomInput
-                onChange={e => appendEnv("BUILD_DIRECTORY", e.target.value, false, setValue, services)}
-                label="Build Directory"
-                description="The Repository Branch used for your private service"
-                placeholder="eg. anything"
-              />
-              <CustomInput
-                onChange={e => appendEnv("BUILD_COMMAND", e.target.value, false, setValue, services)}
-                label="Build Command"
-                description="A unique name for your web service."
-                placeholder="$ yarn"
-              />
-              <CustomInput
-                onChange={e => appendEnv("CUSTOM_SRC", e.target.value, false, setValue, services)}
-                label="Start Command"
-                description="The Repository Branch used for your private service"
-                placeholder="$ yarn start"
-              />
-              <CustomInput
-                onChange={e => appendEnv("NODE_VERSION", e.target.value, false, setValue, services)}
-                label="Node Version"
-                description="The Repository Branch used for your private service"
-                placeholder="14"
-              />
-              <CustomInput
-                onChange={e => appendEnv("COMMIT_HASH", e.target.value, false, setValue, services)}
-                label="Commit Hash"
-                description="The Repository Branch used for your private service"
-                placeholder="eg. anything"
-              />
-            </div>
-          </CollapsibleContent>
-        </CardContent>
-      </Card>
-    </Collapsible>
-  );
-};
-const Advanced = ({ services, control }) => {
-  const serviceIndex = 0;
-  const [expanded, setExpanded] = useState(false);
-  const currentService = services[serviceIndex];
-  console.log(currentService);
-  const [isEditingEnv, setIsEditingEnv] = useState<number | boolean | null>(null);
-  const _isEditingEnv = serviceIndex === isEditingEnv;
-  return (
-    <Collapsible
-      open={expanded}
-      onOpenChange={value => {
-        setExpanded(value);
-      }}
-    >
-      <Card className="mt-4 rounded-sm border border-muted-foreground/20">
-        <CardContent className="p-0">
-          <CollapsibleTrigger asChild>
-            <div className="flex items-center justify-between p-4">
-              <h1 className="font-semibold">Advanced</h1>
-              <NavArrowDown fontSize="1rem" className={cn("transition-all duration-100", { ["rotate-180"]: expanded })} />
-            </div>
-          </CollapsibleTrigger>
-          {expanded && <Separator />}
-          <CollapsibleContent>
-            <div className="p-5">
-              <EnvFormModal
-                control={control}
-                onClose={() => setIsEditingEnv(null)}
-                serviceIndex={serviceIndex}
-                envs={currentService.env || []}
-                // hasSecretOption={hasSecretOption}
-              />
-            </div>
-          </CollapsibleContent>
-        </CardContent>
-      </Card>
-    </Collapsible>
-  );
-};
-
-const CustomInput = ({
-  label,
-  description,
-  placeholder,
-  onChange
-}: {
-  label: string;
-  description: string;
-  placeholder: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}) => {
-  return (
-    <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-semibold">{label}</h1>
-        <p className="text-muted-foreground">{description}</p>
-      </div>
-      <Input onChange={onChange} placeholder={placeholder} />
-    </div>
-  );
-};
-
-const Repos = ({ repos, setValue, token, isLoading }) => {
-  const [open, setOpen] = useState(false);
-  console.log(repos);
-
-  return (
-    <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-semibold">Select Repository</h1>
-        <p className="text-muted-foreground">The Repository Branch used for your private service</p>
-      </div>
-
-      <Select
-        onOpenChange={value => {
-          setOpen(value);
-        }}
-        open={open}
-        onValueChange={value => {
-          setValue("services.0.env", [
-            { id: nanoid(), key: "REPO_URL", value: value, isSecret: false },
-            { id: nanoid(), key: "BRANCH_NAME", value: "main", isSecret: false },
-            { id: nanoid(), key: "ACCESS_TOKEN", value: token, isSecret: true }
-          ]);
-        }}
-      >
-        <SelectTrigger className="w-full">
-          <div className="flex items-center gap-2">
-            {isLoading && <Spinner size="small" />}
-            <SelectValue placeholder={"Select Repository"} />
-          </div>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {repos?.map((repo: any) => (
-              <SelectItem key={repo.html_url} value={repo.html_url}>
-                <div className="flex items-center">
-                  <GithubCircle className="mr-2" />
-                  {repo.name}
-                  {/* if is private add a lock icon */}
-                  {repo.private && <Lock className="ml-1 text-xs" />}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-};
-
-const Branches = ({ repos, services, setValue, token }) => {
-  const repo = repos?.find(r => r?.html_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
-  const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo?.html_url));
-  console.log(selected);
-  const [packageJson, setPackageJson] = useState<any>(null);
-  const { data: branches, isLoading: branchesLoading } = useQuery({
-    queryKey: ["branches", repo?.full_name],
-    queryFn: async () => {
-      const response = await axios.get(`https://api.github.com/repos/${repo.full_name}/branches`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      return response.data;
-    },
-    enabled: !!selected && repos?.length > 0
-  });
-
-  useQuery({
-    queryKey: ["packageJson", repo?.full_name],
-    queryFn: async () => {
-      const response = await axios.get(`https://api.github.com/repos/${repo.full_name}/contents/package.json`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      return response.data;
-    },
-    enabled: !!selected && repos?.length > 0,
-    onSettled: data => {
-      if (data?.content === undefined) return;
-      const content = atob(data.content);
-      const parsed = JSON.parse(content);
-      setPackageJson(parsed);
-    }
-  });
-
-  console.log(packageJson);
-
-  return (
-    <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-semibold">Select Branch</h1>
-        <p className="text-muted-foreground">Select a branch to use for deployment</p>
-      </div>
-
-      <Select
-        disabled={!selected}
-        onValueChange={value => {
-          setValue("services.0.env", [
-            { id: nanoid(), key: "REPO_URL", value: repo.html_url, isSecret: false },
-            { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false },
-            { id: nanoid(), key: "ACCESS_TOKEN", value: token, isSecret: true }
-          ]);
-        }}
-      >
-        <SelectTrigger className="w-full">
-          <div className="flex items-center gap-2">
-            {branchesLoading && <Spinner size="small" />}
-            <SelectValue placeholder="Select" />
-          </div>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {branches?.map((branch: any) => (
-              <SelectItem key={branch.name} value={branch.name}>
-                {branch.name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-};
-{
-  /*         
-{packageJson && (
-  <div className="flex w-full items-center justify-between gap-3">
-    <p>Framework</p>
-    <p className="capitalize">{packageJson?.scripts?.start?.split(" ")[0]}</p>
-  </div>
-)} */
-}
