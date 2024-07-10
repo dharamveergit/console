@@ -1,8 +1,10 @@
 import { useMutation, useQuery } from "react-query";
 import axios, { AxiosError } from "axios";
 
+import { PROXY_API_URL_AUTH } from "./utils";
+
 const Github_API_URL = "https://api.github.com";
-const Github_API_URL_AUTH = "https://proxy-console-github.vercel.app/authenticate";
+
 export const CLIEND_ID = "Iv23liZYLYN9I2HrgeOh";
 export const REDIRECT_URL = "http://localhost:3000/new-deployment?step=edit-deployment&type=github";
 
@@ -75,7 +77,7 @@ export const useRepos = (type: "github" | "gitlab" | "bitbucket", setToken: (tok
 export const useFetchAccessToken = (setToken: (token: string | null) => void) => {
   return useMutation({
     mutationFn: async (code: string) => {
-      const response = await axios.post(Github_API_URL_AUTH, {
+      const response = await axios.post(`${PROXY_API_URL_AUTH}/authenticate`, {
         code
       });
 

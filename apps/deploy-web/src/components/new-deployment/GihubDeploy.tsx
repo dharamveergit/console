@@ -6,6 +6,7 @@ import { set } from "lodash";
 import { Service } from "@src/types";
 import Advanced from "../remote-deploy/Advanced";
 import { handleLogin, useFetchAccessToken, useRepos, useUserProfile } from "../remote-deploy/api";
+import { useBitFetchAccessToken, useBitUserProfile } from "../remote-deploy/bitbucket-api";
 import Branches from "../remote-deploy/Branches";
 import CustomInput from "../remote-deploy/CustomInput";
 import Details from "../remote-deploy/Details";
@@ -15,7 +16,7 @@ import { appendEnv } from "../remote-deploy/utils";
 const BitBucketKey = "HfxhSWx78u8juqs2Ta";
 
 const handleLoginBit = () => {
-  window.location.href = `https://bitbucket.org/site/oauth2/authorize?client_id=${BitBucketKey}&response_type=token`;
+  window.location.href = `https://bitbucket.org/site/oauth2/authorize?client_id=${BitBucketKey}&response_type=code`;
 };
 
 const GithubDeploy = ({ setValue, services, control }: { setValue: any; services: Service[]; control: any }) => {
@@ -24,33 +25,27 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
   const { data: repos, isLoading } = useRepos(type, setToken, token);
 
   const { data: userProfile, isLoading: fetchingProfile } = useUserProfile(type, token);
-
-  console.log(userProfile);
+  const { data: userProfileBit, isLoading: fetchingProfileBit } = useBitUserProfile(type, token);
+  console.log(userProfileBit);
 
   const { mutate: fetchAccessToken, isLoading: fetchingToken } = useFetchAccessToken(setToken);
+  const { mutate: fetchAccessTokenBit, isLoading: fetchingTokenBit } = useBitFetchAccessToken(setToken);
 
   const [selectedTab, setSelectedTab] = useState("git");
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (type === "github") {
-      const code = url.searchParams.get("code");
-      setToken(localStorage.getItem("token"));
 
-      if (code && !token) {
-        fetchAccessToken(code);
-      }
-    }
-    if (type === "bitbucket") {
-      // #access_token a hash fragment
-      const code = url.hash.split("=")[1];
-      if (code && !token) {
-        setToken(code);
-      }
+    const code = url.searchParams.get("code");
+    setToken(localStorage.getItem("token"));
+
+    if (code && !token) {
+      if (type === "github") fetchAccessToken(code);
+      if (type === "bitbucket") fetchAccessTokenBit(code);
     }
   }, [token, type]);
 
-  console.log(token);
+  console.log(type, token);
 
   return (
     <>
@@ -73,17 +68,15 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
               </TabsList>
               <TabsContent value="git">
                 {" "}
-                {fetchingToken || fetchingProfile ? (
+                {fetchingToken || fetchingProfile || fetchingTokenBit || fetchingProfileBit ? (
                   <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
                     <Spinner size="large" />
                     <p className="text-muted-foreground">Loading...</p>
                   </div>
                 ) : token ? (
                   <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
-                    <h1 className="text-2xl font-semibold text-primary">
-                      Welcome, {userProfile?.login} {type}
-                    </h1>
-                    <p className="text-muted-foreground">Let’s Configure and Deploy your new web service</p>
+                    <h1 className="text-2xl font-semibold text-primary">Welcome, {type === "bitbucket" ? userProfileBit?.display_name : userProfile?.login}</h1>
+                    <p className="text-muted-foreground">Let’s Configure and Deploy your new web service ({type})</p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-6 rounded-sm border py-8">
