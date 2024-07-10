@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "react-query";
 import { Button, Spinner, Tabs, TabsContent, TabsList, TabsTrigger } from "@akashnetwork/ui/components";
-import axios, { AxiosError } from "axios";
 import { Bitbucket, Github, GitlabFull } from "iconoir-react";
 
 import { Service } from "@src/types";
 import Advanced from "../remote-deploy/Advanced";
+import { handleLogin, useFetchAccessToken, useRepos, useUserProfile } from "../remote-deploy/api";
 import Branches from "../remote-deploy/Branches";
 import CustomInput from "../remote-deploy/CustomInput";
 import Details from "../remote-deploy/Details";
@@ -13,96 +12,15 @@ import Repos from "../remote-deploy/Repos";
 import { appendEnv } from "../remote-deploy/utils";
 
 const GithubDeploy = ({ setValue, services, control }: { setValue: any; services: Service[]; control: any }) => {
-  console.log(services);
-
-  const clientId = "Iv23liZYLYN9I2HrgeOh";
-  const redirectUri = "http://localhost:3000/new-deployment?step=edit-deployment&type=github";
   const [token, setToken] = useState(localStorage.getItem("token") || null);
-  const handleLogin = () => {
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}`;
-  };
 
-  const { data: repos, isLoading } = useQuery({
-    queryKey: ["repos"],
-    queryFn: async () => {
-      const response = await axios.get("https://api.github.com/user/repos", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      return response.data;
-    },
-    onError: (error: AxiosError<{ message: string }>) => {
-      if (error?.response?.data?.message === "Bad credentials") {
-        console.log("Bad credentials");
-        localStorage.removeItem("token");
-        setToken(null);
-        refreshToken();
-        return;
-      }
-    },
-    onSettled: data => {
-      console.log(data);
+  const { data: repos, isLoading } = useRepos(setToken, token);
 
-      if (data?.message === "Bad credentials") {
-        console.log("Bad credentials");
-
-        localStorage.removeItem("token");
-        setToken(null);
-        return;
-      }
-    },
-    enabled: !!token
-  });
-
-  const { mutate: refreshToken, isLoading: refreshingToken } = useMutation({
-    mutationFn: async () => {
-      const response = await axios.post("https://proxy-console-github.vercel.app/refresh", {
-        refreshToken: token
-      });
-      return response.data;
-    },
-    onSuccess: data => {
-      console.log(data);
-
-      setToken(data.access_token);
-      if (data.access_token) {
-        localStorage.setItem("token", data.access_token);
-      }
-    }
-  });
-
-  const { data: userProfile, isLoading: fetchingProfile } = useQuery({
-    queryKey: ["userProfile", token],
-    queryFn: async () => {
-      const response = await axios.get("https://api.github.com/user", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      return response.data;
-    },
-    enabled: !!token
-  });
+  const { data: userProfile, isLoading: fetchingProfile } = useUserProfile(token);
 
   console.log(userProfile);
 
-  const { mutate: fetchAccessToken, isLoading: fetchingToken } = useMutation({
-    mutationFn: async (code: string) => {
-      const response = await axios.post("https://proxy-console-github.vercel.app/authenticate", {
-        code
-      });
-      return response.data;
-    },
-    onSuccess: data => {
-      console.log(data);
-
-      setToken(data.access_token);
-      if (data.access_token) {
-        localStorage.setItem("token", data.access_token);
-      }
-    }
-  });
+  const { mutate: fetchAccessToken, isLoading: fetchingToken } = useFetchAccessToken(setToken);
 
   const [selectedTab, setSelectedTab] = useState("git");
 
@@ -139,7 +57,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
               </TabsList>
               <TabsContent value="git">
                 {" "}
-                {fetchingToken || refreshingToken || fetchingProfile ? (
+                {fetchingToken || fetchingProfile ? (
                   <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
                     <Spinner size="large" />
                     <p className="text-muted-foreground">Loading...</p>

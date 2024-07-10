@@ -1,11 +1,10 @@
 "use client";
-import React, { Dispatch, useEffect, useState } from "react";
 import { Button, buttonVariants } from "@akashnetwork/ui/components";
-import { ArrowRight, Cpu, Github, Page, Rocket, Wrench } from "iconoir-react";
-import { NavArrowLeft } from "iconoir-react";
+import { ArrowRight, Cpu, Github, NavArrowLeft, Page, Wrench } from "iconoir-react";
 import { useAtom } from "jotai";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import React, { Dispatch, useEffect, useState } from "react";
 
 import { useTemplates } from "@src/context/TemplatesProvider";
 import { usePreviousRoute } from "@src/hooks/usePreviousRoute";
@@ -13,7 +12,7 @@ import sdlStore from "@src/store/sdlStore";
 import { ApiTemplate } from "@src/types";
 import { RouteStepKeys } from "@src/utils/constants";
 import { cn } from "@src/utils/styleUtils";
-import { helloWorldTemplate, ubuntuTemplate } from "@src/utils/templates";
+import { ubuntuTemplate } from "@src/utils/templates";
 import { domainName, NewDeploymentParams, UrlService } from "@src/utils/urlUtils";
 import { CustomNextSeo } from "../shared/CustomNextSeo";
 import { TemplateBox } from "../templates/TemplateBox";
@@ -80,13 +79,18 @@ export const TemplateList: React.FunctionComponent<Props> = ({ setGithub }) => {
 
       <div className="mb-8">
         <div className="grid grid-cols-1 gap-2 md:grid-cols-4 md:gap-4">
-          <DeployOptionBox
+          {/* <DeployOptionBox
             title={helloWorldTemplate.title}
             description={helloWorldTemplate.description}
             icon={<Rocket className="rotate-45" />}
             onClick={() => router.push(UrlService.newDeployment({ step: RouteStepKeys.editDeployment, templateId: helloWorldTemplate.code }))}
+          /> */}
+          <DeployOptionBox
+            title={"Deploy from GitHub or any other git provider"}
+            description={"Deploy directly from GitHub/BitBucket/GitLab by connecting your account"}
+            icon={<Github />}
+            onClick={handleGithubTemplate}
           />
-
           <DeployOptionBox
             title="Rent GPUs"
             description="Rent GPUs from the Akash Network providers to run your AI workloads."
@@ -111,13 +115,6 @@ export const TemplateList: React.FunctionComponent<Props> = ({ setGithub }) => {
               testId="plain-linux-card"
             />
           }
-
-          <DeployOptionBox
-            title={"Github"}
-            description={"Deploy from a Github repository. You can deploy directly from a Github repository by providing the URL."}
-            icon={<Github />}
-            onClick={handleGithubTemplate}
-          />
         </div>
       </div>
 

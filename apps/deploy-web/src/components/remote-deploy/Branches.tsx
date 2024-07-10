@@ -4,23 +4,14 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import axios from "axios";
 import { nanoid } from "nanoid";
 
+import { useBranches } from "./api";
+
 const Branches = ({ repos, services, setValue, token }) => {
   const repo = repos?.find(r => r?.html_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
   const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo?.html_url));
   console.log(selected);
   const [packageJson, setPackageJson] = useState<any>(null);
-  const { data: branches, isLoading: branchesLoading } = useQuery({
-    queryKey: ["branches", repo?.full_name],
-    queryFn: async () => {
-      const response = await axios.get(`https://api.github.com/repos/${repo.full_name}/branches`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      return response.data;
-    },
-    enabled: !!selected && repos?.length > 0
-  });
+  const { data: branches, isLoading: branchesLoading } = useBranches(repo?.full_name, token, !!selected && repos?.length > 0);
 
   useQuery({
     queryKey: ["packageJson", repo?.full_name],
