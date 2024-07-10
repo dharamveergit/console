@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Spinner, Tabs, TabsContent, TabsList, TabsTrigger } from "@akashnetwork/ui/components";
 import { Bitbucket, Github, GitlabFull } from "iconoir-react";
+import { set } from "lodash";
 
 import { Service } from "@src/types";
 import Advanced from "../remote-deploy/Advanced";
@@ -11,12 +12,18 @@ import Details from "../remote-deploy/Details";
 import Repos from "../remote-deploy/Repos";
 import { appendEnv } from "../remote-deploy/utils";
 
+const BitBucketKey = "HfxhSWx78u8juqs2Ta";
+
+const handleLoginBit = () => {
+  window.location.href = `https://bitbucket.org/site/oauth2/authorize?client_id=${BitBucketKey}&response_type=token`;
+};
+
 const GithubDeploy = ({ setValue, services, control }: { setValue: any; services: Service[]; control: any }) => {
   const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [type, setType] = useState<"github" | "gitlab" | "bitbucket">((localStorage.getItem("type") as "github" | "gitlab" | "bitbucket") || "github");
+  const { data: repos, isLoading } = useRepos(type, setToken, token);
 
-  const { data: repos, isLoading } = useRepos(setToken, token);
-
-  const { data: userProfile, isLoading: fetchingProfile } = useUserProfile(token);
+  const { data: userProfile, isLoading: fetchingProfile } = useUserProfile(type, token);
 
   console.log(userProfile);
 
@@ -26,15 +33,24 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    const code = url.searchParams.get("code");
-    setToken(localStorage.getItem("token"));
+    if (type === "github") {
+      const code = url.searchParams.get("code");
+      setToken(localStorage.getItem("token"));
 
-    if (code && !token) {
-      fetchAccessToken(code);
+      if (code && !token) {
+        fetchAccessToken(code);
+      }
     }
-  }, [token]);
+    if (type === "bitbucket") {
+      // #access_token a hash fragment
+      const code = url.hash.split("=")[1];
+      if (code && !token) {
+        setToken(code);
+      }
+    }
+  }, [token, type]);
 
-  console.log(token, repos);
+  console.log(token);
 
   return (
     <>
@@ -64,7 +80,9 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
                   </div>
                 ) : token ? (
                   <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
-                    <h1 className="text-2xl font-semibold text-primary">Welcome, {userProfile?.login}</h1>
+                    <h1 className="text-2xl font-semibold text-primary">
+                      Welcome, {userProfile?.login} {type}
+                    </h1>
                     <p className="text-muted-foreground">Let’s Configure and Deploy your new web service</p>
                   </div>
                 ) : (
@@ -74,7 +92,15 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
                       <p className="text-sm text-muted-foreground">Connect your GitHub account to use the GitHub integration.</p>
                     </div>
                     <div className="flex gap-3">
-                      <Button variant="outline" className="">
+                      <Button
+                        onClick={() => {
+                          setType("bitbucket");
+                          localStorage.setItem("type", "bitbucket");
+                          handleLoginBit();
+                        }}
+                        variant="outline"
+                        className=""
+                      >
                         <Bitbucket className="mr-2" />
                         Bitbucket
                       </Button>
@@ -82,7 +108,15 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
                         <GitlabFull className="mr-2" />
                         GitLab
                       </Button>
-                      <Button onClick={handleLogin} variant="outline" className="">
+                      <Button
+                        onClick={() => {
+                          setType("github");
+                          localStorage.setItem("type", "github");
+                          handleLogin();
+                        }}
+                        variant="outline"
+                        className=""
+                      >
                         <Github className="mr-2" />
                         Github
                       </Button>

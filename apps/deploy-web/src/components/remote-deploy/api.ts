@@ -18,7 +18,7 @@ const axiosInstance = axios.create({
   }
 });
 
-export const useUserProfile = (token?: string | null) => {
+export const useUserProfile = (type: "github" | "gitlab" | "bitbucket", token?: string | null) => {
   return useQuery({
     queryKey: ["userProfile", token],
     queryFn: async () => {
@@ -29,11 +29,11 @@ export const useUserProfile = (token?: string | null) => {
       });
       return response.data;
     },
-    enabled: !!token
+    enabled: !!token && type === "github"
   });
 };
 
-export const useRepos = (setToken: (token: string | null) => void, token?: string | null) => {
+export const useRepos = (type: "github" | "gitlab" | "bitbucket", setToken: (token: string | null) => void, token?: string | null) => {
   return useQuery({
     queryKey: ["repos"],
     queryFn: async () => {
@@ -68,7 +68,7 @@ export const useRepos = (setToken: (token: string | null) => void, token?: strin
         return;
       }
     },
-    enabled: !!token
+    enabled: !!token && type === "github"
   });
 };
 
