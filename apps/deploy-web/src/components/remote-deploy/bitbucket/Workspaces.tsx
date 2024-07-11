@@ -16,7 +16,7 @@ const WorkSpaces = ({ isLoading, workSpaces, setWorkSpaces }: { isLoading: boole
   return (
     <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
       <div className="flex flex-col gap-2">
-        <h1 className="font-semibold">Select Work Space</h1>
+        <h1 className="font-semibold">Select WorkSpace</h1>
         <p className="text-muted-foreground">Select a Work-Space to use for deployment</p>
       </div>
 

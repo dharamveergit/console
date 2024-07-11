@@ -27,7 +27,8 @@ const Branches = ({ repos, services, setValue }) => {
         disabled={!selected}
         onValueChange={value => {
           setValue("services.0.env", [
-            { id: nanoid(), key: "REPO_URL", value: repo.html_url, isSecret: false },
+            { id: nanoid(), key: "REPO_URL", value: repo.links.self.href, isSecret: false },
+
             { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false },
             { id: nanoid(), key: "ACCESS_TOKEN", value: token, isSecret: true }
           ]);
