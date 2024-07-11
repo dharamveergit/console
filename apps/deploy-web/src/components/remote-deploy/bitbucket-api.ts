@@ -1,7 +1,10 @@
 import { useMutation, useQuery } from "react-query";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
+import { useAtom } from "jotai";
+import { usePathname, useRouter } from "next/navigation";
 
-import { OAuth, PROXY_API_URL_AUTH } from "./utils";
+import remoteDeployStore from "@src/store/remoteDeployStore";
+import { PROXY_API_URL_AUTH } from "./utils";
 
 const Bitbucket_API_URL = "https://api.bitbucket.org/2.0";
 
@@ -13,22 +16,26 @@ const axiosInstance = axios.create({
   }
 });
 
-export const useBitUserProfile = (type: OAuth, token?: string | null) => {
+export const useBitUserProfile = () => {
+  const [token] = useAtom(remoteDeployStore.tokens);
   return useQuery({
-    queryKey: ["userProfile", token],
+    queryKey: ["userProfile", token.access_token],
     queryFn: async () => {
       const response = await axiosInstance.get("/user", {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token?.access_token}`
         }
       });
       return response.data;
     },
-    enabled: !!token && type === "bitbucket"
+    enabled: !!token?.access_token && token.type === "bitbucket"
   });
 };
 
-export const useBitFetchAccessToken = (setToken: (token: string | null) => void) => {
+export const useBitFetchAccessToken = () => {
+  const [, setToken] = useAtom(remoteDeployStore.tokens);
+  const pathname = usePathname();
+  const router = useRouter();
   return useMutation({
     mutationFn: async (code: string) => {
       const response = await axios.post(`${PROXY_API_URL_AUTH}/bitbucket/authenticate`, {
@@ -38,12 +45,61 @@ export const useBitFetchAccessToken = (setToken: (token: string | null) => void)
       return response.data;
     },
     onSuccess: data => {
-      console.log(data);
+      setToken({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        type: "bitbucket"
+      });
 
-      setToken(data.access_token);
-      if (data.access_token) {
-        localStorage.setItem("token", data.access_token);
-      }
+      router.replace(pathname.split("?")[0] + "?step=edit-deployment&type=github");
     }
+  });
+};
+
+export const useWorkspaces = () => {
+  const [token] = useAtom(remoteDeployStore.tokens);
+  return useQuery({
+    queryKey: ["workspaces", token.access_token],
+    queryFn: async () => {
+      const response = await axiosInstance.get("/workspaces", {
+        headers: {
+          Authorization: `Bearer ${token?.access_token}`
+        }
+      });
+      return response.data;
+    },
+    enabled: !!token?.access_token && token.type === "bitbucket"
+  });
+};
+
+export const useBitReposByWorkspace = (workspace: string) => {
+  const [token] = useAtom(remoteDeployStore.tokens);
+  return useQuery({
+    queryKey: ["repos", token.access_token, workspace],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/repositories/${workspace}`, {
+        headers: {
+          Authorization: `Bearer ${token?.access_token}`
+        }
+      });
+      return response.data;
+    },
+    enabled: !!token?.access_token && token.type === "bitbucket" && !!workspace
+  });
+};
+
+export const useBitBranches = (repo: string, selected: boolean) => {
+  const [token] = useAtom(remoteDeployStore.tokens);
+  return useQuery({
+    queryKey: ["branches", repo],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/repositories/${repo}/refs/branches`, {
+        headers: {
+          Authorization: `Bearer ${token?.access_token}`
+        }
+      });
+      return response.data;
+    },
+    enabled: !!repo && !!token?.access_token && token.type === "bitbucket" && !!selected
   });
 };

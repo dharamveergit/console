@@ -2,37 +2,19 @@ import { useState } from "react";
 import { useQuery } from "react-query";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Spinner } from "@akashnetwork/ui/components";
 import axios from "axios";
+import { useAtom } from "jotai";
 import { nanoid } from "nanoid";
 
-import { useBranches } from "./api";
+import remoteDeployStore from "@src/store/remoteDeployStore";
+import { useBitBranches } from "../bitbucket-api";
 
-const Branches = ({ repos, services, setValue, token }) => {
-  const repo = repos?.find(r => r?.html_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
-  const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo?.html_url));
-  console.log(selected);
-  const [packageJson, setPackageJson] = useState<any>(null);
-  const { data: branches, isLoading: branchesLoading } = useBranches(repo?.full_name, !!selected && repos?.length > 0);
+const Branches = ({ repos, services, setValue }) => {
+  const [token] = useAtom(remoteDeployStore.tokens);
+  const repo = repos?.values?.find(r => r?.links?.self?.href === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
+  const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo?.links?.self?.href));
 
-  useQuery({
-    queryKey: ["packageJson", repo?.full_name],
-    queryFn: async () => {
-      const response = await axios.get(`https://api.github.com/repos/${repo.full_name}/contents/package.json`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      return response.data;
-    },
-    enabled: !!selected && repos?.length > 0,
-    onSettled: data => {
-      if (data?.content === undefined) return;
-      const content = atob(data.content);
-      const parsed = JSON.parse(content);
-      setPackageJson(parsed);
-    }
-  });
-
-  console.log(packageJson);
+  const { data: branches, isLoading: branchesLoading } = useBitBranches(repo?.full_name, !!selected && repos?.values?.length > 0);
+  console.log(branches);
 
   return (
     <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
@@ -59,7 +41,7 @@ const Branches = ({ repos, services, setValue, token }) => {
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {branches?.map((branch: any) => (
+            {branches?.values?.map((branch: any) => (
               <SelectItem key={branch.name} value={branch.name}>
                 {branch.name}
               </SelectItem>

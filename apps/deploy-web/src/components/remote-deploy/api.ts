@@ -1,6 +1,9 @@
 import { useMutation, useQuery } from "react-query";
 import axios, { AxiosError } from "axios";
+import { useAtom } from "jotai";
+import { usePathname, useRouter } from "next/navigation";
 
+import remoteDeployStore from "@src/store/remoteDeployStore";
 import { PROXY_API_URL_AUTH } from "./utils";
 
 const Github_API_URL = "https://api.github.com";
@@ -20,31 +23,33 @@ const axiosInstance = axios.create({
   }
 });
 
-export const useUserProfile = (type: "github" | "gitlab" | "bitbucket", token?: string | null) => {
+export const useUserProfile = () => {
+  const [token] = useAtom(remoteDeployStore.tokens);
   return useQuery({
-    queryKey: ["userProfile", token],
+    queryKey: ["userProfile", token?.access_token],
     queryFn: async () => {
       const response = await axiosInstance.get("/user", {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token?.access_token}`
         }
       });
       return response.data;
     },
-    enabled: !!token && type === "github"
+    enabled: !!token?.access_token && token.type === "github"
   });
 };
 
-export const useRepos = (type: "github" | "gitlab" | "bitbucket", setToken: (token: string | null) => void, token?: string | null) => {
+export const useRepos = () => {
+  const [token] = useAtom(remoteDeployStore.tokens);
   return useQuery({
-    queryKey: ["repos"],
+    queryKey: ["repos", token?.access_token],
     queryFn: async () => {
       const response = await axiosInstance.get(
         "/user/repos",
 
         {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token?.access_token}`
           }
         }
       );
@@ -53,10 +58,6 @@ export const useRepos = (type: "github" | "gitlab" | "bitbucket", setToken: (tok
     onError: (error: AxiosError<{ message: string }>) => {
       if (error?.response?.data?.message === "Bad credentials") {
         console.log("Bad credentials");
-        localStorage.removeItem("token");
-        setToken(null);
-        handleLogin();
-        return;
       }
     },
     onSettled: data => {
@@ -64,17 +65,16 @@ export const useRepos = (type: "github" | "gitlab" | "bitbucket", setToken: (tok
 
       if (data?.message === "Bad credentials") {
         console.log("Bad credentials");
-
-        localStorage.removeItem("token");
-        setToken(null);
-        return;
       }
     },
-    enabled: !!token && type === "github"
+    enabled: !!token?.access_token && token.type === "github"
   });
 };
 
-export const useFetchAccessToken = (setToken: (token: string | null) => void) => {
+export const useFetchAccessToken = () => {
+  const [, setToken] = useAtom(remoteDeployStore.tokens);
+  const pathname = usePathname();
+  const router = useRouter();
   return useMutation({
     mutationFn: async (code: string) => {
       const response = await axios.post(`${PROXY_API_URL_AUTH}/authenticate`, {
@@ -86,21 +86,24 @@ export const useFetchAccessToken = (setToken: (token: string | null) => void) =>
     onSuccess: data => {
       console.log(data);
 
-      setToken(data.access_token);
-      if (data.access_token) {
-        localStorage.setItem("token", data.access_token);
-      }
+      setToken({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        type: "github"
+      });
+      router.replace(pathname.split("?")[0] + "?step=edit-deployment&type=github");
     }
   });
 };
 
-export const useBranches = (repo: string, token: string, fetch: boolean) => {
+export const useBranches = (repo: string, fetch: boolean) => {
+  const [token] = useAtom(remoteDeployStore.tokens);
   return useQuery({
-    queryKey: ["branches", repo],
+    queryKey: ["branches", repo, token?.access_token],
     queryFn: async () => {
       const response = await axiosInstance.get(`/repos/${repo}/branches`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token?.access_token}`
         }
       });
       return response.data;
