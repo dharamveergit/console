@@ -161,7 +161,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
             </Tabs>
           }
         </div>
-        {selectedTab === "git" && (
+        {selectedTab === "git" && token?.access_token && (
           <div className="grid grid-cols-2 gap-6">
             {token?.type === "github" ? (
               <>
