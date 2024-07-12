@@ -6,7 +6,7 @@ import { useAtom } from "jotai";
 import { nanoid } from "nanoid";
 
 import remoteDeployStore from "@src/store/remoteDeployStore";
-import { useBitBranches } from "../bitbucket-api";
+import { useBitBranches } from "../api/bitbucket-api";
 
 const Branches = ({ repos, services, setValue }) => {
   const [token] = useAtom(remoteDeployStore.tokens);

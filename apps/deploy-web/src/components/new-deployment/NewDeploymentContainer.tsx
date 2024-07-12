@@ -1,5 +1,6 @@
 "use client";
 import { FC, useEffect, useState } from "react";
+import { ro } from "date-fns/locale";
 import { useAtomValue } from "jotai";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -47,8 +48,12 @@ export const NewDeploymentContainer: FC = () => {
 
     const code = searchParams?.get("code");
     const type = searchParams?.get("type");
+    const state = searchParams?.get("state");
 
-    if (type === "github" || code) {
+    if (type === "github" || code || state === "gitlab") {
+      if (state === "gitlab") {
+        router.replace(`/new-deployment?step=${RouteStepKeys.editDeployment}&type=gitlab&code=${code}`);
+      }
       setSelectedTemplate(hardcodedTemplates.find(t => t.title === "GitHub") as TemplateCreation);
       setEditedManifest(hardcodedTemplates.find(t => t.title === "GitHub")?.content as string);
       setGithub(true);

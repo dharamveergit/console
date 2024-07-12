@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Spinner } from "@akashnetwork/ui/components";
-import { GithubCircle, Lock } from "iconoir-react";
+import { Bitbucket, GithubCircle, Lock } from "iconoir-react";
 import { useAtom } from "jotai";
 import { nanoid } from "nanoid";
 
@@ -40,7 +40,7 @@ const Repos = ({ repos, setValue, isLoading }) => {
             {repos?.values?.map((repo: any) => (
               <SelectItem key={repo?.full_name} value={repo?.links?.self?.href}>
                 <div className="flex items-center">
-                  <GithubCircle className="mr-2" />
+                  <Bitbucket className="mr-2" />
                   {repo?.name}
 
                   {repo?.is_private && <Lock className="ml-1 text-xs" />}

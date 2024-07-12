@@ -7,21 +7,16 @@ import { set } from "lodash";
 import remoteDeployStore from "@src/store/remoteDeployStore";
 import { Service } from "@src/types";
 import Advanced from "../remote-deploy/Advanced";
-import { handleLogin, useFetchAccessToken, useRepos, useUserProfile } from "../remote-deploy/api";
+import { handleLogin, useFetchAccessToken, useRepos, useUserProfile } from "../remote-deploy/api/api";
+import { handleLoginBit, useBitFetchAccessToken, useBitUserProfile } from "../remote-deploy/api/bitbucket-api";
+import { handleGitLabLogin, useGitLabFetchAccessToken, useGitLabUserProfile } from "../remote-deploy/api/gitlab-api";
 import Bit from "../remote-deploy/bitbucket/Bit";
 import WorkSpaces from "../remote-deploy/bitbucket/Workspaces";
-import { useBitFetchAccessToken, useBitUserProfile } from "../remote-deploy/bitbucket-api";
 import Branches from "../remote-deploy/Branches";
 import CustomInput from "../remote-deploy/CustomInput";
 import Details from "../remote-deploy/Details";
 import Repos from "../remote-deploy/Repos";
 import { appendEnv } from "../remote-deploy/utils";
-
-const BitBucketKey = "HfxhSWx78u8juqs2Ta";
-
-const handleLoginBit = () => {
-  window.location.href = `https://bitbucket.org/site/oauth2/authorize?client_id=${BitBucketKey}&response_type=code`;
-};
 
 const GithubDeploy = ({ setValue, services, control }: { setValue: any; services: Service[]; control: any }) => {
   const [token, setToken] = useAtom(remoteDeployStore.tokens);
@@ -29,10 +24,12 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
 
   const { data: userProfile, isLoading: fetchingProfile } = useUserProfile();
   const { data: userProfileBit, isLoading: fetchingProfileBit } = useBitUserProfile();
+  const { data: userProfileGitLab, isLoading: fetchingProfileGitLab } = useGitLabUserProfile();
   console.log(userProfileBit);
 
   const { mutate: fetchAccessToken, isLoading: fetchingToken } = useFetchAccessToken();
   const { mutate: fetchAccessTokenBit, isLoading: fetchingTokenBit } = useBitFetchAccessToken();
+  const { mutate: fetchAccessTokenGitLab, isLoading: fetchingTokenGitLab } = useGitLabFetchAccessToken();
 
   const [selectedTab, setSelectedTab] = useState("git");
 
@@ -49,6 +46,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
     if (code && !token?.access_token && open) {
       if (token?.type === "github") fetchAccessToken(code);
       if (token?.type === "bitbucket") fetchAccessTokenBit(code);
+      if (token?.type === "gitlab") fetchAccessTokenGitLab(code);
     }
   }, [open]);
 
@@ -69,13 +67,25 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
               }}
               defaultValue="git"
             >
-              <TabsList>
-                <TabsTrigger value="git">Git Provider</TabsTrigger>
-                <TabsTrigger value="public">Public Git Repository</TabsTrigger>
-              </TabsList>
+              <div className="flex items-center justify-between">
+                <TabsList>
+                  <TabsTrigger value="git">Git Provider</TabsTrigger>
+                  <TabsTrigger value="public">Public Git Repository</TabsTrigger>
+                </TabsList>
+                {token?.access_token && (
+                  <button
+                    className="text-primary"
+                    onClick={() => {
+                      setToken({ access_token: null, refresh_token: null, type: "github" });
+                    }}
+                  >
+                    Logout
+                  </button>
+                )}
+              </div>
               <TabsContent value="git">
                 {" "}
-                {fetchingToken || fetchingProfile || fetchingTokenBit || fetchingProfileBit ? (
+                {fetchingToken || fetchingProfile || fetchingTokenBit || fetchingProfileBit || fetchingTokenGitLab || fetchingProfileGitLab ? (
                   <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
                     <Spinner size="large" />
                     <p className="text-muted-foreground">Loading...</p>
@@ -83,7 +93,8 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
                 ) : token?.access_token ? (
                   <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
                     <h1 className="text-2xl font-semibold text-primary">
-                      Welcome, {token?.type === "bitbucket" ? userProfileBit?.display_name : userProfile?.login}
+                      Welcome,{" "}
+                      {token?.type === "bitbucket" ? userProfileBit?.display_name : token?.type === "gitlab" ? userProfileGitLab?.name : userProfile?.login}
                     </h1>
                     <p className="text-muted-foreground">Let’s Configure and Deploy your new web service ({token?.type})</p>
                   </div>
@@ -106,7 +117,14 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
                         <Bitbucket className="mr-2" />
                         Bitbucket
                       </Button>
-                      <Button variant="outline" className="">
+                      <Button
+                        onClick={() => {
+                          setToken({ access_token: null, refresh_token: null, type: "gitlab" });
+                          handleGitLabLogin();
+                        }}
+                        variant="outline"
+                        className=""
+                      >
                         <GitlabFull className="mr-2" />
                         GitLab
                       </Button>

@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import axios from "axios";
 import { nanoid } from "nanoid";
 
-import { useBranches } from "./api";
+import { useBranches } from "./api/api";
 
 const Branches = ({ repos, services, setValue, token }) => {
   const repo = repos?.find(r => r?.html_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);

@@ -4,10 +4,14 @@ import { useAtom } from "jotai";
 import { usePathname, useRouter } from "next/navigation";
 
 import remoteDeployStore from "@src/store/remoteDeployStore";
-import { PROXY_API_URL_AUTH } from "./utils";
+import { PROXY_API_URL_AUTH } from "../utils";
 
 const Bitbucket_API_URL = "https://api.bitbucket.org/2.0";
+const BitBucketKey = "HfxhSWx78u8juqs2Ta";
 
+export const handleLoginBit = () => {
+  window.location.href = `https://bitbucket.org/site/oauth2/authorize?client_id=${BitBucketKey}&response_type=code`;
+};
 const axiosInstance = axios.create({
   baseURL: Bitbucket_API_URL,
   headers: {

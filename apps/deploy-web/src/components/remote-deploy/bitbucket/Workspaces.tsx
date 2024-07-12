@@ -5,7 +5,7 @@ import { useAtom } from "jotai";
 import { nanoid } from "nanoid";
 
 import remoteDeployStore from "@src/store/remoteDeployStore";
-import { useWorkspaces } from "../bitbucket-api";
+import { useWorkspaces } from "../api/bitbucket-api";
 const WorkSpaces = ({ isLoading, workSpaces, setWorkSpaces }: { isLoading: boolean; workSpaces: string; setWorkSpaces: Dispatch<string> }) => {
   const [open, setOpen] = useState(false);
 
