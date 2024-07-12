@@ -11,7 +11,7 @@ const CLIEND_ID = "f8b7584c38a6aaba2315e3c377513debd589e0a06bf15cc3fd96b1dd713b1
 const REDIRECT_URL = "http://localhost:3000/new-deployment";
 
 export const handleGitLabLogin = () => {
-  window.location.href = `https://gitlab.com/oauth/authorize?client_id=${CLIEND_ID}&redirect_uri=${REDIRECT_URL}&response_type=code&scope=read_user+read_repository&state=gitlab`;
+  window.location.href = `https://gitlab.com/oauth/authorize?client_id=${CLIEND_ID}&redirect_uri=${REDIRECT_URL}&response_type=code&scope=read_user+read_repository+read_api&state=gitlab`;
 };
 
 const axiosInstance = axios.create({
@@ -59,5 +59,37 @@ export const useGitLabUserProfile = () => {
       return response.data;
     },
     enabled: !!token?.access_token && token.type === "gitlab"
+  });
+};
+
+export const useGitLabGroups = () => {
+  const [token] = useAtom(remoteDeployStore.tokens);
+  return useQuery({
+    queryKey: ["gitlab-repos", token?.access_token],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/groups`, {
+        headers: {
+          Authorization: `Bearer ${token?.access_token}`
+        }
+      });
+      return response.data;
+    },
+    enabled: !!token?.access_token && token.type === "gitlab"
+  });
+};
+
+export const useGitLabReposByGroup = (group: string) => {
+  const [token] = useAtom(remoteDeployStore.tokens);
+  return useQuery({
+    queryKey: ["repos", token?.access_token, group],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/groups/${group}/projects`, {
+        headers: {
+          Authorization: `Bearer ${token?.access_token}`
+        }
+      });
+      return response.data;
+    },
+    enabled: !!token?.access_token && token.type === "gitlab" && !!group
   });
 };

@@ -15,6 +15,7 @@ import WorkSpaces from "../remote-deploy/bitbucket/Workspaces";
 import Branches from "../remote-deploy/Branches";
 import CustomInput from "../remote-deploy/CustomInput";
 import Details from "../remote-deploy/Details";
+import GitLab from "../remote-deploy/gitlab/Gitlab";
 import Repos from "../remote-deploy/Repos";
 import { appendEnv } from "../remote-deploy/utils";
 
@@ -25,7 +26,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
   const { data: userProfile, isLoading: fetchingProfile } = useUserProfile();
   const { data: userProfileBit, isLoading: fetchingProfileBit } = useBitUserProfile();
   const { data: userProfileGitLab, isLoading: fetchingProfileGitLab } = useGitLabUserProfile();
-  console.log(userProfileBit);
+  console.log(userProfileGitLab);
 
   const { mutate: fetchAccessToken, isLoading: fetchingToken } = useFetchAccessToken();
   const { mutate: fetchAccessTokenBit, isLoading: fetchingTokenBit } = useBitFetchAccessToken();
@@ -168,8 +169,10 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
                 <Repos repos={repos} setValue={setValue} token={token} isLoading={isLoading} />
                 <Branches repos={repos} services={services} setValue={setValue} token={token} />
               </>
-            ) : (
+            ) : token?.type === "bitbucket" ? (
               <Bit loading={fetchingProfileBit} setValue={setValue} services={services} />
+            ) : (
+              <GitLab loading={fetchingProfileGitLab} setValue={setValue} services={services} id={userProfileGitLab?.username} />
             )}
           </div>
         )}
