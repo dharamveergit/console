@@ -7,14 +7,15 @@ import { nanoid } from "nanoid";
 
 import remoteDeployStore from "@src/store/remoteDeployStore";
 import { useBitBranches } from "../api/bitbucket-api";
+import { useGitLabBranches } from "../api/gitlab-api";
 
 const Branches = ({ repos, services, setValue }) => {
   const [token] = useAtom(remoteDeployStore.tokens);
-  const repo = repos?.values?.find(r => r?.links?.self?.href === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
-  const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo?.links?.self?.href));
+  const repo = repos?.find(r => r?.web_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
+  const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo?.web_url));
 
-  const { data: branches, isLoading: branchesLoading } = useBitBranches(repo?.full_name, !!selected && repos?.values?.length > 0);
-  console.log(branches);
+  const { data: branches, isLoading: branchesLoading } = useGitLabBranches(repo?.id);
+  console.log(repo);
 
   return (
     <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
@@ -27,7 +28,7 @@ const Branches = ({ repos, services, setValue }) => {
         disabled={!selected}
         onValueChange={value => {
           setValue("services.0.env", [
-            { id: nanoid(), key: "REPO_URL", value: repo.links.self.href, isSecret: false },
+            { id: nanoid(), key: "REPO_URL", value: repo.web_url, isSecret: false },
 
             { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false },
             { id: nanoid(), key: "ACCESS_TOKEN", value: token?.access_token, isSecret: true }
@@ -42,7 +43,7 @@ const Branches = ({ repos, services, setValue }) => {
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {branches?.values?.map((branch: any) => (
+            {branches?.map((branch: any) => (
               <SelectItem key={branch.name} value={branch.name}>
                 {branch.name}
               </SelectItem>

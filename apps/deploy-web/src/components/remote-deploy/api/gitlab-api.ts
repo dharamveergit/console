@@ -93,3 +93,19 @@ export const useGitLabReposByGroup = (group: string) => {
     enabled: !!token?.access_token && token.type === "gitlab" && !!group
   });
 };
+
+export const useGitLabBranches = (repo: string) => {
+  const [token] = useAtom(remoteDeployStore.tokens);
+  return useQuery({
+    queryKey: ["branches", repo],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/projects/${repo}/repository/branches`, {
+        headers: {
+          Authorization: `Bearer ${token?.access_token}`
+        }
+      });
+      return response.data;
+    },
+    enabled: !!token?.access_token && token.type === "gitlab" && !!repo
+  });
+};

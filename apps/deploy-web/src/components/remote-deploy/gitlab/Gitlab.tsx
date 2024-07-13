@@ -2,8 +2,8 @@ import React, { useState } from "react";
 
 import { Service } from "@src/types";
 import { useGitLabReposByGroup } from "../api/gitlab-api";
+import Branches from "./Branches";
 import Groups from "./Groups";
-// import Branches from "./Branches";
 import Repos from "./Repos";
 
 const GitLab = ({ loading, setValue, services, id }: { loading: boolean; setValue: any; services: Service[]; id: string }) => {
@@ -13,7 +13,7 @@ const GitLab = ({ loading, setValue, services, id }: { loading: boolean; setValu
     <>
       <Groups isLoading={loading} group={group} setGroup={setGroup} />
       <Repos isLoading={isLoading} repos={repos} setValue={setValue} />
-      {/* <Branches repos={repos} services={services} setValue={setValue} /> */}
+      <Branches repos={repos} services={services} setValue={setValue} />
     </>
   );
 };
