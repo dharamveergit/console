@@ -11,8 +11,9 @@ const Github_API_URL = "https://api.github.com";
 export const CLIEND_ID = "Iv23liZYLYN9I2HrgeOh";
 
 export const handleLogin = () => {
-  window.location.href = `https://github.com/login/oauth/authorize?client_id=${CLIEND_ID}&redirect_uri=${REDIRECT_URL}`;
+  window.location.href = "https://github.com/apps/console-test/installations/new";
 };
+// window.location.href = `https://github.com/login/oauth/authorize?client_id=${CLIEND_ID}&redirect_uri=${REDIRECT_URL}`;
 
 const axiosInstance = axios.create({
   baseURL: Github_API_URL,
