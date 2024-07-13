@@ -4,7 +4,7 @@ import { useAtom } from "jotai";
 import { usePathname, useRouter } from "next/navigation";
 
 import remoteDeployStore from "@src/store/remoteDeployStore";
-import { PROXY_API_URL_AUTH, REDIRECT_URL } from "../utils";
+import { PROXY_API_URL_AUTH } from "../utils";
 
 const Github_API_URL = "https://api.github.com";
 

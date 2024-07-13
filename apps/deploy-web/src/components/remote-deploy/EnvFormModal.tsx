@@ -1,8 +1,8 @@
 "use client";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Control, Controller, useFieldArray } from "react-hook-form";
 import { Button, CustomNoDivTooltip, FormInput, Switch } from "@akashnetwork/ui/components";
-import { Bin } from "iconoir-react";
+import { Bin, Eye, EyeClosed } from "iconoir-react";
 import { nanoid } from "nanoid";
 
 import { EnvironmentVariable, RentGpusFormValues, SdlBuilderFormValues } from "@src/types";
@@ -70,14 +70,7 @@ export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceI
                   name={`services.${serviceIndex}.env.${envIndex}.value`}
                   render={({ field }) => (
                     <div className="ml-2 flex-grow">
-                      <FormInput
-                        type="password"
-                        label="Value"
-                        color="secondary"
-                        value={field.value}
-                        onChange={event => field.onChange(event.target.value)}
-                        className="w-full"
-                      />
+                      <EnvPasswordInput field={field} label="Value" />
                     </div>
                   )}
                 />
@@ -124,6 +117,26 @@ export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceI
       </FormPaper>
       <Button onClick={onAddEnv} size="sm" variant="default" className="w-min">
         Add Variable
+      </Button>
+    </div>
+  );
+};
+
+const EnvPasswordInput = ({ field, label }: { field: any; label: string }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  return (
+    <div className="relative flex flex-col">
+      <FormInput
+        type={showPassword ? "text" : "password"}
+        label={label}
+        color="secondary"
+        value={field.value}
+        onChange={event => field.onChange(event.target.value)}
+        className="w-full pr-12"
+        autoComplete="new-password"
+      />
+      <Button onClick={() => setShowPassword(!showPassword)} variant="text" size="icon" className="absolute right-0 top-[72%] mr-2 -translate-y-1/2 transform">
+        {!showPassword ? <EyeClosed /> : <Eye />}
       </Button>
     </div>
   );

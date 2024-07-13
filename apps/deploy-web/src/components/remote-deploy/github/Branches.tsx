@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import axios from "axios";
 import { nanoid } from "nanoid";
 
-import { useBranches } from "./api/api";
+import { useBranches } from "../api/api";
 
 const Branches = ({ repos, services, setValue, token }) => {
   console.log(token);

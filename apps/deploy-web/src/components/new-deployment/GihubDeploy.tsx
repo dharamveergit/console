@@ -1,27 +1,23 @@
 import { useEffect, useState } from "react";
 import { Button, Spinner, Tabs, TabsContent, TabsList, TabsTrigger } from "@akashnetwork/ui/components";
-import { Bitbucket, Github, GitlabFull } from "iconoir-react";
+import { Bitbucket, Github as GitIcon, GitlabFull } from "iconoir-react";
 import { useAtom } from "jotai";
-import { set } from "lodash";
 
 import remoteDeployStore from "@src/store/remoteDeployStore";
 import { Service } from "@src/types";
 import Advanced from "../remote-deploy/Advanced";
-import { handleLogin, useFetchAccessToken, useRepos, useUserProfile } from "../remote-deploy/api/api";
+import { handleLogin, useFetchAccessToken, useUserProfile } from "../remote-deploy/api/api";
 import { handleLoginBit, useBitFetchAccessToken, useBitUserProfile } from "../remote-deploy/api/bitbucket-api";
 import { handleGitLabLogin, useGitLabFetchAccessToken, useGitLabUserProfile } from "../remote-deploy/api/gitlab-api";
 import Bit from "../remote-deploy/bitbucket/Bit";
-import WorkSpaces from "../remote-deploy/bitbucket/Workspaces";
-import Branches from "../remote-deploy/Branches";
 import CustomInput from "../remote-deploy/CustomInput";
 import Details from "../remote-deploy/Details";
+import Github from "../remote-deploy/github/Github";
 import GitLab from "../remote-deploy/gitlab/Gitlab";
-import Repos from "../remote-deploy/Repos";
 import { appendEnv } from "../remote-deploy/utils";
 
 const GithubDeploy = ({ setValue, services, control }: { setValue: any; services: Service[]; control: any }) => {
   const [token, setToken] = useAtom(remoteDeployStore.tokens);
-  const { data: repos, isLoading } = useRepos();
 
   const { data: userProfile, isLoading: fetchingProfile } = useUserProfile();
   const { data: userProfileBit, isLoading: fetchingProfileBit } = useBitUserProfile();
@@ -85,7 +81,6 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
                 )}
               </div>
               <TabsContent value="git">
-                {" "}
                 {fetchingToken || fetchingProfile || fetchingTokenBit || fetchingProfileBit || fetchingTokenGitLab || fetchingProfileGitLab ? (
                   <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
                     <Spinner size="large" />
@@ -137,7 +132,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
                         variant="outline"
                         className=""
                       >
-                        <Github className="mr-2" />
+                        <GitIcon className="mr-2" />
                         Github
                       </Button>
                     </div>
@@ -165,9 +160,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
           <div className="grid grid-cols-2 gap-6">
             {token?.type === "github" ? (
               <>
-                {" "}
-                <Repos repos={repos} setValue={setValue} token={token} isLoading={isLoading} />
-                <Branches repos={repos} services={services} setValue={setValue} token={token?.access_token} />
+                <Github setValue={setValue} services={services} />
               </>
             ) : token?.type === "bitbucket" ? (
               <Bit loading={fetchingProfileBit} setValue={setValue} services={services} />
@@ -176,7 +169,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
             )}
           </div>
         )}
-      </div>{" "}
+      </div>
       <Details services={services} setValue={setValue} />
       <Advanced services={services} control={control} />
     </>
