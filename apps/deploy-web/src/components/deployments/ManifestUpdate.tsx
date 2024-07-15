@@ -22,6 +22,7 @@ import { deploymentData } from "@src/utils/deploymentData";
 import { getDeploymentLocalData, saveDeploymentManifest } from "@src/utils/deploymentLocalDataUtils";
 import { sendManifestToProvider } from "@src/utils/deploymentUtils";
 import { TransactionMessageData } from "@src/utils/TransactionMessageData";
+import RemoteDeployUpdate from "../remote-deploy/update/RemoteDeployUpdate";
 import { ManifestErrorSnackbar } from "../shared/ManifestErrorSnackbar";
 import { Title } from "../shared/Title";
 
@@ -42,7 +43,7 @@ export const ManifestUpdate: React.FunctionComponent<Props> = ({ deployment, lea
   const { data: providers } = useProviderList();
   const { localCert, isLocalCertMatching, createCertificate, isCreatingCert } = useCertificate();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
-
+  const [remoteDeploy, setRemoteDeploy] = useState<boolean>(false);
   useEffect(() => {
     const init = async () => {
       const localDeploymentData = getDeploymentLocalData(deployment.dseq);
@@ -233,6 +234,7 @@ export const ManifestUpdate: React.FunctionComponent<Props> = ({ deployment, lea
                     disabled={!!parsingError || !editedManifest || !providers || isSendingManifest || deployment.state !== "active"}
                     onClick={() => handleUpdateClick()}
                     size="sm"
+                    type="button"
                   >
                     Update Deployment
                   </Button>
@@ -243,10 +245,12 @@ export const ManifestUpdate: React.FunctionComponent<Props> = ({ deployment, lea
             {parsingError && <Alert variant="warning">{parsingError}</Alert>}
 
             <LinearLoadingSkeleton isLoading={isSendingManifest} />
-
-            <ViewPanel stickToBottom style={{ overflow: "hidden" }}>
-              <DynamicMonacoEditor value={editedManifest} onChange={handleTextChange} />
-            </ViewPanel>
+            <RemoteDeployUpdate sdlString={editedManifest} setRemoteDeploy={setRemoteDeploy} setEditedManifest={setEditedManifest} />
+            {!remoteDeploy && (
+              <ViewPanel stickToBottom style={{ overflow: "hidden" }}>
+                <DynamicMonacoEditor value={editedManifest} onChange={handleTextChange} />
+              </ViewPanel>
+            )}
           </div>
         </>
       )}

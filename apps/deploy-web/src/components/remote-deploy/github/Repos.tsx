@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Spinner } from "@akashnetwork/ui/components";
 import { GithubCircle, Lock } from "iconoir-react";
+import { useAtom } from "jotai";
 import { nanoid } from "nanoid";
-const Repos = ({ repos, setValue, token, isLoading }) => {
+
+import remoteDeployStore from "@src/store/remoteDeployStore";
+const Repos = ({ repos, setValue, isLoading, services }) => {
   const [open, setOpen] = useState(false);
   console.log(repos);
-
+  const [token] = useAtom(remoteDeployStore.tokens);
   return (
     <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
       <div className="flex flex-col gap-2">
@@ -17,12 +20,13 @@ const Repos = ({ repos, setValue, token, isLoading }) => {
         onOpenChange={value => {
           setOpen(value);
         }}
+        value={services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value}
         open={open}
         onValueChange={value => {
           setValue("services.0.env", [
             { id: nanoid(), key: "REPO_URL", value: value, isSecret: false },
             { id: nanoid(), key: "BRANCH_NAME", value: "main", isSecret: false },
-            { id: nanoid(), key: "ACCESS_TOKEN", value: token, isSecret: true }
+            { id: nanoid(), key: "ACCESS_TOKEN", value: token?.access_token, isSecret: false }
           ]);
         }}
       >

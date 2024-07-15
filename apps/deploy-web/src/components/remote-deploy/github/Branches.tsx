@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useQuery } from "react-query";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Spinner } from "@akashnetwork/ui/components";
 import axios from "axios";
+import { useAtom } from "jotai";
 import { nanoid } from "nanoid";
 
+import remoteDeployStore from "@src/store/remoteDeployStore";
 import { useBranches } from "../api/api";
 
-const Branches = ({ repos, services, setValue, token }) => {
-  console.log(token);
-
+const Branches = ({ repos, services, setValue }) => {
+  const [token] = useAtom(remoteDeployStore.tokens);
   const repo = repos?.find(r => r?.html_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
   const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo?.html_url));
   console.log(selected);
@@ -20,7 +21,7 @@ const Branches = ({ repos, services, setValue, token }) => {
     queryFn: async () => {
       const response = await axios.get(`https://api.github.com/repos/${repo.full_name}/contents/package.json`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token?.access_token}`
         }
       });
       return response.data;
@@ -49,7 +50,7 @@ const Branches = ({ repos, services, setValue, token }) => {
           setValue("services.0.env", [
             { id: nanoid(), key: "REPO_URL", value: repo.html_url, isSecret: false },
             { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false },
-            { id: nanoid(), key: "ACCESS_TOKEN", value: token, isSecret: false }
+            { id: nanoid(), key: "ACCESS_TOKEN", value: token?.access_token, isSecret: false }
           ]);
         }}
       >

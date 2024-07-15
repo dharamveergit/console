@@ -9,11 +9,11 @@ import Repos from "./Repos";
 
 const Github = ({ setValue, services }: { setValue: any; services: Service[] }) => {
   const { data: repos, isLoading } = useRepos();
-  const [token] = useAtom(remoteDeployStore.tokens);
+
   return (
     <>
-      <Repos repos={repos} setValue={setValue} token={token} isLoading={isLoading} />
-      <Branches repos={repos} services={services} setValue={setValue} token={token?.access_token} />
+      <Repos repos={repos} setValue={setValue} isLoading={isLoading} services={services} />
+      <Branches repos={repos} services={services} setValue={setValue} />
     </>
   );
 };

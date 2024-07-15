@@ -112,3 +112,22 @@ export const useBranches = (repo: string, fetch: boolean) => {
     enabled: fetch
   });
 };
+
+//fetch all commits in a branch
+
+export const useCommits = (repo: string, branch: string) => {
+  const [token] = useAtom(remoteDeployStore.tokens);
+  return useQuery({
+    queryKey: ["commits", repo, branch, token?.access_token, repo, branch],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/repos/${repo}/commits?sha=${branch}`, {
+        headers: {
+          Authorization: `Bearer ${token?.access_token}`
+        }
+      });
+      return response.data;
+    },
+
+    enabled: !!token?.access_token && token.type === "github" && !!repo && !!branch
+  });
+};
