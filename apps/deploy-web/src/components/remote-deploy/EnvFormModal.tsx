@@ -20,11 +20,8 @@ type Props = {
 };
 
 export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceIndex, envs: _envs, hasSecretOption = true }) => {
-  const {
-    fields: envs,
-    remove: removeEnv,
-    append: appendEnv
-  } = useFieldArray({
+  const [envs, setEnvs] = useState<EnvironmentVariable[]>(_envs);
+  const { remove: removeEnv, append: appendEnv } = useFieldArray({
     control,
     name: `services.${serviceIndex}.env`,
     keyName: "id"
@@ -40,13 +37,19 @@ export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceI
     appendEnv({ id: nanoid(), key: "", value: "", isSecret: false });
   };
 
+  useEffect(() => {
+    setEnvs(_envs);
+  }, []);
+
+  console.log(envs);
+
   return (
     <div className="flex flex-col gap-3 rounded border p-4">
       <h1 className="text-sm font-bold">Environment Variables</h1>
       <FormPaper contentClassName=" ">
         {envs.map((env, envIndex) => {
           return (
-            <div key={env.id} className={cn("flex", { ["mb-2"]: envIndex + 1 !== envs.length }, { ["hidden"]: hiddenEnv.includes(env.key) })}>
+            <div key={env.id} className={cn("flex", { ["mb-2"]: envIndex + 1 !== envs.length }, { ["hidden"]: hiddenEnv.includes(env?.key?.trim()) })}>
               <div className="flex flex-grow flex-col items-end sm:flex-row">
                 <Controller
                   control={control}
@@ -135,6 +138,7 @@ const EnvPasswordInput = ({ field, label }: { field: any; label: string }) => {
         className="w-full pr-12"
         autoComplete="new-password"
       />
+
       <Button onClick={() => setShowPassword(!showPassword)} variant="text" size="icon" className="absolute right-0 top-[72%] mr-2 -translate-y-1/2 transform">
         {!showPassword ? <EyeClosed /> : <Eye />}
       </Button>

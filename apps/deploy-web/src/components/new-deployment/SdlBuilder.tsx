@@ -151,7 +151,7 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
               </Alert>
             )}
 
-            {!hasComponent("ssh") && (
+            {!hasComponent("ssh") && !github && (
               <div className="flex items-center justify-end pt-4">
                 <div>
                   <Button variant="default" size="sm" type="button" onClick={onAddService}>

@@ -96,7 +96,7 @@ export const useFetchAccessToken = () => {
   });
 };
 
-export const useBranches = (repo: string, fetch: boolean) => {
+export const useBranches = (repo?: string, fetch?: boolean) => {
   const [token] = useAtom(remoteDeployStore.tokens);
   return useQuery({
     queryKey: ["branches", repo, token?.access_token],
@@ -109,7 +109,7 @@ export const useBranches = (repo: string, fetch: boolean) => {
       return response.data;
     },
 
-    enabled: fetch
+    enabled: !!token?.access_token && token.type === "github" && !!repo
   });
 };
 

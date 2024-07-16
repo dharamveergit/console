@@ -160,7 +160,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
           <div className="grid grid-cols-2 gap-6">
             {token?.type === "github" ? (
               <>
-                <Github setValue={setValue} services={services} />
+                <Github setValue={setValue} services={services} control={control} />
               </>
             ) : token?.type === "bitbucket" ? (
               <Bit loading={fetchingProfileBit} setValue={setValue} services={services} />

@@ -1,41 +1,43 @@
-import { useState } from "react";
-import { useQuery } from "react-query";
+import { Control, useFieldArray } from "react-hook-form";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Spinner } from "@akashnetwork/ui/components";
-import axios from "axios";
-import { useAtom } from "jotai";
 import { nanoid } from "nanoid";
 
-import remoteDeployStore from "@src/store/remoteDeployStore";
+import { SdlBuilderFormValues, Service } from "@src/types";
 import { useBranches } from "../api/api";
 
-const Branches = ({ repos, services, setValue }) => {
-  const [token] = useAtom(remoteDeployStore.tokens);
-  const repo = repos?.find(r => r?.html_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
-  const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo?.html_url));
-  console.log(selected);
-  const [packageJson, setPackageJson] = useState<any>(null);
-  const { data: branches, isLoading: branchesLoading } = useBranches(repo?.full_name, !!selected && repos?.length > 0);
+const Branches = ({ services, control }: { services: Service[]; control: Control<SdlBuilderFormValues> }) => {
+  const selected = services?.[0]?.env
+    ?.find(e => e.key === "REPO_URL")
+    ?.value?.split("/")
+    .slice(-2)
+    .join("/");
 
-  useQuery({
-    queryKey: ["packageJson", repo?.full_name],
-    queryFn: async () => {
-      const response = await axios.get(`https://api.github.com/repos/${repo.full_name}/contents/package.json`, {
-        headers: {
-          Authorization: `Bearer ${token?.access_token}`
-        }
-      });
-      return response.data;
-    },
-    enabled: !!selected && repos?.length > 0,
-    onSettled: data => {
-      if (data?.content === undefined) return;
-      const content = atob(data.content);
-      const parsed = JSON.parse(content);
-      setPackageJson(parsed);
-    }
+  const { fields, append, update } = useFieldArray({
+    control,
+    name: "services.0.env",
+    keyName: "id"
   });
 
-  console.log(packageJson);
+  const { data: branches, isLoading: branchesLoading } = useBranches(selected);
+
+  // useQuery({
+  //   queryKey: ["packageJson", repo?.full_name],
+  //   queryFn: async () => {
+  //     const response = await axios.get(`https://api.github.com/repos/${repo.full_name}/contents/package.json`, {
+  //       headers: {
+  //         Authorization: `Bearer ${token?.access_token}`
+  //       }
+  //     });
+  //     return response.data;
+  //   },
+  //   enabled: !!selected && repos?.length > 0,
+  //   onSettled: data => {
+  //     if (data?.content === undefined) return;
+  //     const content = atob(data.content);
+  //     const parsed = JSON.parse(content);
+  //     setPackageJson(parsed);
+  //   }
+  // });
 
   return (
     <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
@@ -46,12 +48,17 @@ const Branches = ({ repos, services, setValue }) => {
 
       <Select
         disabled={!selected}
+        value={fields.find(e => e.key === "BRANCH_NAME")?.value}
         onValueChange={value => {
-          setValue("services.0.env", [
-            { id: nanoid(), key: "REPO_URL", value: repo.html_url, isSecret: false },
-            { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false },
-            { id: nanoid(), key: "ACCESS_TOKEN", value: token?.access_token, isSecret: false }
-          ]);
+          const branch = { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false };
+          if (fields.find(e => e.key === "BRANCH_NAME")) {
+            update(
+              fields.findIndex(e => e.key === "BRANCH_NAME"),
+              branch
+            );
+          } else {
+            append(branch);
+          }
         }}
       >
         <SelectTrigger className="w-full">

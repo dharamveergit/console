@@ -9,6 +9,8 @@ import { defaultService } from "@src/utils/sdl/data";
 import { generateSdl } from "@src/utils/sdl/sdlGenerator";
 import { importSimpleSdl } from "@src/utils/sdl/sdlImport";
 import { useCommits } from "../api/api";
+import { EnvFormModal } from "../EnvFormModal";
+import Branches from "../github/Branches";
 
 const RemoteDeployUpdate = ({
   sdlString,
@@ -19,6 +21,8 @@ const RemoteDeployUpdate = ({
   setRemoteDeploy: Dispatch<React.SetStateAction<boolean>>;
   setEditedManifest: Dispatch<React.SetStateAction<string | null>>;
 }) => {
+  console.log(sdlString);
+
   const [, setIsInit] = useState(false);
   const { control, watch, setValue } = useForm<SdlBuilderFormValues>({
     defaultValues: {
@@ -82,8 +86,8 @@ const RemoteDeployUpdate = ({
     }
   }, [services]);
 
-  return (
-    <div>
+  return services?.[0]?.image === "hoomanhq/automation:0.202" ? (
+    <div className="flex flex-col gap-6 rounded border bg-card px-6 py-6">
       <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
         <div className="flex flex-col gap-2">
           <h1 className="font-semibold">RollBack</h1>
@@ -92,8 +96,10 @@ const RemoteDeployUpdate = ({
 
         <SelectCommit services={services} control={control} />
       </div>
+      <Branches services={services} control={control} />
+      <EnvFormModal control={control} serviceIndex={0} envs={services[0]?.env ?? []} onClose={() => {}} />
     </div>
-  );
+  ) : null;
 };
 
 export default RemoteDeployUpdate;
@@ -131,6 +137,7 @@ const Field = ({ data, control }: { data: any; control: Control<SdlBuilderFormVa
     <div className="flex items-center gap-6">
       {manual ? (
         <Input
+          value={services[0]?.env?.find(e => e.key === "COMMIT_HASH")?.value}
           placeholder="Commit Hash"
           onChange={e => {
             const hash = { id: nanoid(), key: "COMMIT_HASH", value: e.target.value, isSecret: false };
@@ -147,6 +154,7 @@ const Field = ({ data, control }: { data: any; control: Control<SdlBuilderFormVa
         />
       ) : (
         <Select
+          value={services[0]?.env?.find(e => e.key === "COMMIT_HASH")?.value}
           onValueChange={(value: any) => {
             const hash = { id: nanoid(), key: "COMMIT_HASH", value: value, isSecret: false };
 

@@ -1,10 +1,10 @@
 "use client";
+import React, { Dispatch, useEffect, useState } from "react";
 import { Button, buttonVariants } from "@akashnetwork/ui/components";
-import { ArrowRight, Cpu, Github, NavArrowLeft, Page, Wrench } from "iconoir-react";
+import { ArrowRight, Cpu, Github, NavArrowLeft, Page, Rocket, Wrench } from "iconoir-react";
 import { useAtom } from "jotai";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { Dispatch, useEffect, useState } from "react";
 
 import { useTemplates } from "@src/context/TemplatesProvider";
 import { usePreviousRoute } from "@src/hooks/usePreviousRoute";
@@ -86,9 +86,9 @@ export const TemplateList: React.FunctionComponent<Props> = ({ setGithub }) => {
             onClick={() => router.push(UrlService.newDeployment({ step: RouteStepKeys.editDeployment, templateId: helloWorldTemplate.code }))}
           /> */}
           <DeployOptionBox
-            title={"Deploy from GitHub or any other git provider"}
-            description={"Deploy directly from GitHub/BitBucket/GitLab by connecting your account"}
-            icon={<Github />}
+            title={"Build and Deploy"}
+            description={"Deploy directly from GitHub/BitBucket/GitLab"}
+            icon={<Rocket />}
             onClick={handleGithubTemplate}
           />
           <DeployOptionBox
