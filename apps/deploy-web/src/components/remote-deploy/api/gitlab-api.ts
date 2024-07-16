@@ -94,7 +94,7 @@ export const useGitLabReposByGroup = (group: string) => {
   });
 };
 
-export const useGitLabBranches = (repo: string) => {
+export const useGitLabBranches = (repo?: string) => {
   const [token] = useAtom(remoteDeployStore.tokens);
   return useQuery({
     queryKey: ["branches", repo],

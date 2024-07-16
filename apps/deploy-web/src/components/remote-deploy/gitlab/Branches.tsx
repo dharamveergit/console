@@ -1,21 +1,21 @@
-import { useState } from "react";
-import { useQuery } from "react-query";
+import { Control, useFieldArray } from "react-hook-form";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Spinner } from "@akashnetwork/ui/components";
-import axios from "axios";
-import { useAtom } from "jotai";
 import { nanoid } from "nanoid";
 
-import remoteDeployStore from "@src/store/remoteDeployStore";
-import { useBitBranches } from "../api/bitbucket-api";
+import { SdlBuilderFormValues, Service } from "@src/types";
 import { useGitLabBranches } from "../api/gitlab-api";
+import { removeInitialUrl } from "../utils";
 
-const Branches = ({ repos, services, setValue }) => {
-  const [token] = useAtom(remoteDeployStore.tokens);
-  const repo = repos?.find(r => r?.web_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
-  const selected = services?.find(s => s?.env?.find(e => e.key === "REPO_URL" && e.value === repo?.web_url));
+const Branches = ({ repos, services, control }: { repos: any; services: Service[]; control: Control<SdlBuilderFormValues> }) => {
+  const selected = repos?.find(e => e.web_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value)?.id;
+  console.log(selected);
 
-  const { data: branches, isLoading: branchesLoading } = useGitLabBranches(repo?.id);
-  console.log(repo);
+  const { data: branches, isLoading: branchesLoading } = useGitLabBranches(selected);
+  const { fields, append, update } = useFieldArray({
+    control,
+    name: "services.0.env",
+    keyName: "id"
+  });
 
   return (
     <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
@@ -26,13 +26,17 @@ const Branches = ({ repos, services, setValue }) => {
 
       <Select
         disabled={!selected}
+        value={fields.find(e => e.key === "BRANCH_NAME")?.value}
         onValueChange={value => {
-          setValue("services.0.env", [
-            { id: nanoid(), key: "REPO_URL", value: repo.web_url, isSecret: false },
-
-            { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false },
-            { id: nanoid(), key: "ACCESS_TOKEN", value: token?.access_token, isSecret: true }
-          ]);
+          const branch = { id: nanoid(), key: "BRANCH_NAME", value: value, isSecret: false };
+          if (fields.find(e => e.key === "BRANCH_NAME")) {
+            update(
+              fields.findIndex(e => e.key === "BRANCH_NAME"),
+              branch
+            );
+          } else {
+            append(branch);
+          }
         }}
       >
         <SelectTrigger className="w-full">

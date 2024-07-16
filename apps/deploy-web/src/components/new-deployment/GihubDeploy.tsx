@@ -165,7 +165,7 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
             ) : token?.type === "bitbucket" ? (
               <Bit loading={fetchingProfileBit} setValue={setValue} services={services} control={control} />
             ) : (
-              <GitLab loading={fetchingProfileGitLab} setValue={setValue} services={services} id={userProfileGitLab?.username} />
+              <GitLab loading={fetchingProfileGitLab} setValue={setValue} services={services} control={control} />
             )}
           </div>
         )}
