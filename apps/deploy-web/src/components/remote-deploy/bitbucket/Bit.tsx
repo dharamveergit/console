@@ -2,11 +2,12 @@ import React, { useState } from "react";
 
 import { Service } from "@src/types";
 import { useBitReposByWorkspace } from "../api/bitbucket-api";
+import { ServiceControl } from "../utils";
 import Branches from "./Branches";
 import Repos from "./Repos";
 import WorkSpaces from "./Workspaces";
 
-const Bit = ({ loading, setValue, services }: { loading: boolean; setValue: any; services: Service[] }) => {
+const Bit = ({ loading, setValue, services, control }: { loading: boolean; setValue: any; services: Service[]; control: ServiceControl }) => {
   const [workSpace, setWorkSpace] = useState<string>("");
 
   const { data: repos, isLoading } = useBitReposByWorkspace(workSpace);
@@ -15,7 +16,7 @@ const Bit = ({ loading, setValue, services }: { loading: boolean; setValue: any;
     <>
       <WorkSpaces isLoading={loading} workSpaces={workSpace} setWorkSpaces={setWorkSpace} />
       <Repos isLoading={isLoading} repos={repos} setValue={setValue} />
-      <Branches repos={repos} services={services} setValue={setValue} />
+      <Branches services={services} control={control} />
     </>
   );
 };

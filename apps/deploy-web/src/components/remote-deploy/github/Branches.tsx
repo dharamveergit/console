@@ -4,13 +4,10 @@ import { nanoid } from "nanoid";
 
 import { SdlBuilderFormValues, Service } from "@src/types";
 import { useBranches } from "../api/api";
+import { removeInitialUrl } from "../utils";
 
 const Branches = ({ services, control }: { services: Service[]; control: Control<SdlBuilderFormValues> }) => {
-  const selected = services?.[0]?.env
-    ?.find(e => e.key === "REPO_URL")
-    ?.value?.split("/")
-    .slice(-2)
-    .join("/");
+  const selected = removeInitialUrl(services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
 
   const { fields, append, update } = useFieldArray({
     control,

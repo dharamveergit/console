@@ -20,8 +20,12 @@ type Props = {
 };
 
 export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceIndex, envs: _envs, hasSecretOption = true }) => {
-  const [envs, setEnvs] = useState<EnvironmentVariable[]>(_envs);
-  const { remove: removeEnv, append: appendEnv } = useFieldArray({
+  // const [envs, setEnvs] = useState<EnvironmentVariable[]>(_envs);
+  const {
+    fields: envs,
+    remove: removeEnv,
+    append: appendEnv
+  } = useFieldArray({
     control,
     name: `services.${serviceIndex}.env`,
     keyName: "id"
@@ -36,10 +40,6 @@ export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceI
   const onAddEnv = () => {
     appendEnv({ id: nanoid(), key: "", value: "", isSecret: false });
   };
-
-  useEffect(() => {
-    setEnvs(_envs);
-  }, []);
 
   console.log(envs);
 

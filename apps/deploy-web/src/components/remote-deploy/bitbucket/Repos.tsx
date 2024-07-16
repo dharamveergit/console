@@ -24,7 +24,7 @@ const Repos = ({ repos, setValue, isLoading }) => {
         onValueChange={value => {
           setValue("services.0.env", [
             { id: nanoid(), key: "REPO_URL", value: value, isSecret: false },
-            { id: nanoid(), key: "BRANCH_NAME", value: "main", isSecret: false },
+            { id: nanoid(), key: "BRANCH_NAME", value: repos?.values?.find(repo => repo?.links?.self?.href === value)?.mainbranch?.name, isSecret: false },
             { id: nanoid(), key: "ACCESS_TOKEN", value: token?.access_token, isSecret: true }
           ]);
         }}

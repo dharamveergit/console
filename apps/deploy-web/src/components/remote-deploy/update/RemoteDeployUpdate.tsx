@@ -88,6 +88,7 @@ const RemoteDeployUpdate = ({
 
   return services?.[0]?.image === "hoomanhq/automation:0.202" ? (
     <div className="flex flex-col gap-6 rounded border bg-card px-6 py-6">
+      <EnvFormModal control={control} serviceIndex={0} envs={services[0]?.env ?? []} onClose={() => {}} />
       <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
         <div className="flex flex-col gap-2">
           <h1 className="font-semibold">RollBack</h1>
@@ -97,7 +98,6 @@ const RemoteDeployUpdate = ({
         <SelectCommit services={services} control={control} />
       </div>
       <Branches services={services} control={control} />
-      <EnvFormModal control={control} serviceIndex={0} envs={services[0]?.env ?? []} onClose={() => {}} />
     </div>
   ) : null;
 };

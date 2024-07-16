@@ -92,7 +92,7 @@ export const useBitReposByWorkspace = (workspace: string) => {
   });
 };
 
-export const useBitBranches = (repo: string, selected: boolean) => {
+export const useBitBranches = (repo?: string) => {
   const [token] = useAtom(remoteDeployStore.tokens);
   return useQuery({
     queryKey: ["branches", repo],
@@ -104,6 +104,6 @@ export const useBitBranches = (repo: string, selected: boolean) => {
       });
       return response.data;
     },
-    enabled: !!repo && !!token?.access_token && token.type === "bitbucket" && !!selected
+    enabled: !!repo && !!token?.access_token && token.type === "bitbucket"
   });
 };
