@@ -19,6 +19,8 @@ interface Props {
   sdlString: string | null;
   setEditedManifest: Dispatch<string>;
   github?: boolean;
+  setDeploymentName?: Dispatch<string>;
+  deploymentName?: string;
 }
 
 export type SdlBuilderRefType = {
@@ -26,7 +28,7 @@ export type SdlBuilderRefType = {
   validate: () => Promise<boolean>;
 };
 
-export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlString, setEditedManifest, github }, ref) => {
+export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlString, setEditedManifest, github, setDeploymentName, deploymentName }, ref) => {
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const [isInit, setIsInit] = useState(false);
@@ -125,7 +127,15 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
         </div>
       ) : (
         <>
-          {github && <GithubDeploy setValue={setValue} services={_services as Service[]} control={control} />}
+          {github && (
+            <GithubDeploy
+              setValue={setValue}
+              services={_services as Service[]}
+              control={control}
+              setDeploymentName={setDeploymentName}
+              deploymentName={deploymentName}
+            />
+          )}
           <form ref={formRef} autoComplete="off">
             {_services &&
               services.map((service, serviceIndex) => (

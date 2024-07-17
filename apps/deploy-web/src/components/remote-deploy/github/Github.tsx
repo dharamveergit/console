@@ -1,8 +1,6 @@
-import React from "react";
+import { Dispatch } from "react";
 import { Control } from "react-hook-form";
-import { useAtom } from "jotai";
 
-import remoteDeployStore from "@src/store/remoteDeployStore";
 import { SdlBuilderFormValues, Service } from "@src/types";
 import { useRepos } from "../api/api";
 import Branches from "./Branches";
@@ -11,8 +9,12 @@ import Repos from "./Repos";
 const Github = ({
   control,
   setValue,
-  services
+  services,
+  setDeploymentName,
+  deploymentName
 }: {
+  setDeploymentName?: Dispatch<string>;
+  deploymentName?: string;
   control: Control<SdlBuilderFormValues>;
 
   setValue: any;
@@ -22,7 +24,14 @@ const Github = ({
 
   return (
     <>
-      <Repos repos={repos} setValue={setValue} isLoading={isLoading} services={services} />
+      <Repos
+        repos={repos}
+        setValue={setValue}
+        isLoading={isLoading}
+        services={services}
+        setDeploymentName={setDeploymentName}
+        deploymentName={deploymentName}
+      />
       <Branches services={services} control={control} />
     </>
   );

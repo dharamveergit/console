@@ -44,18 +44,18 @@ export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceI
   console.log(envs);
 
   return (
-    <div className="flex flex-col gap-3 rounded border p-4">
+    <div className="flex flex-col gap-3 rounded md:border md:p-4">
       <h1 className="text-sm font-bold">Environment Variables</h1>
       <FormPaper contentClassName=" ">
         {envs.map((env, envIndex) => {
           return (
             <div key={env.id} className={cn("flex", { ["mb-2"]: envIndex + 1 !== envs.length }, { ["hidden"]: hiddenEnv.includes(env?.key?.trim()) })}>
-              <div className="flex flex-grow flex-col items-end sm:flex-row">
+              <div className="flex flex-grow flex-col items-end gap-4 sm:flex-row">
                 <Controller
                   control={control}
                   name={`services.${serviceIndex}.env.${envIndex}.key`}
                   render={({ field }) => (
-                    <div className="basis-[40%]">
+                    <div className="w-full md:w-auto md:basis-[40%]">
                       <FormInput
                         type="text"
                         label="Key"
@@ -72,7 +72,7 @@ export const EnvFormModal: React.FunctionComponent<Props> = ({ control, serviceI
                   control={control}
                   name={`services.${serviceIndex}.env.${envIndex}.value`}
                   render={({ field }) => (
-                    <div className="ml-2 flex-grow">
+                    <div className="w-full md:ml-2 md:w-auto md:flex-grow">
                       <EnvPasswordInput field={field} label="Value" />
                     </div>
                   )}

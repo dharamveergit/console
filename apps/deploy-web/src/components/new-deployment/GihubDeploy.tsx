@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Dispatch, useEffect, useState } from "react";
 import { Button, Spinner, Tabs, TabsContent, TabsList, TabsTrigger } from "@akashnetwork/ui/components";
 import { Bitbucket, Github as GitIcon, GitlabFull } from "iconoir-react";
 import { useAtom } from "jotai";
@@ -16,7 +16,19 @@ import Github from "../remote-deploy/github/Github";
 import GitLab from "../remote-deploy/gitlab/Gitlab";
 import { appendEnv } from "../remote-deploy/utils";
 
-const GithubDeploy = ({ setValue, services, control }: { setValue: any; services: Service[]; control: any }) => {
+const GithubDeploy = ({
+  setValue,
+  services,
+  control,
+  deploymentName,
+  setDeploymentName
+}: {
+  setValue: any;
+  services: Service[];
+  control: any;
+  setDeploymentName?: Dispatch<string>;
+  deploymentName?: string;
+}) => {
   const [token, setToken] = useAtom(remoteDeployStore.tokens);
 
   const { data: userProfile, isLoading: fetchingProfile } = useUserProfile();
@@ -51,10 +63,10 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
 
   return (
     <>
-      <div className="mt-6 flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
+      <div className="mt-6 flex flex-col gap-5 rounded border bg-card px-4 py-6 text-card-foreground md:px-6">
         <h1 className="font-semibold">Configure</h1>
-        <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
-          <h1 className="font-semibold">Source Code</h1>
+        <div className="flex flex-col gap-5 rounded text-card-foreground md:border md:bg-card md:px-6 md:py-6">
+          <h1 className="hidden font-semibold md:block">Source Code</h1>
 
           {
             <Tabs
@@ -69,9 +81,9 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
                   <TabsTrigger value="git">Git Provider</TabsTrigger>
                   <TabsTrigger value="public">Public Git Repository</TabsTrigger>
                 </TabsList>
-                {token?.access_token && (
+                {token?.access_token && process.env.NODE_ENV === "development" && (
                   <button
-                    className="text-primary"
+                    className="hidden text-primary md:block"
                     onClick={() => {
                       setToken({ access_token: null, refresh_token: null, type: "github" });
                     }}
@@ -80,14 +92,14 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
                   </button>
                 )}
               </div>
-              <TabsContent value="git">
+              <TabsContent value="git" className="mt-8 md:mt-0">
                 {fetchingToken || fetchingProfile || fetchingTokenBit || fetchingProfileBit || fetchingTokenGitLab || fetchingProfileGitLab ? (
                   <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
                     <Spinner size="large" />
                     <p className="text-muted-foreground">Loading...</p>
                   </div>
                 ) : token?.access_token ? (
-                  <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
+                  <div className="flex flex-col justify-center gap-2 rounded border px-5 py-10 md:items-center">
                     <h1 className="text-2xl font-semibold text-primary">
                       Welcome,{" "}
                       {token?.type === "bitbucket" ? userProfileBit?.display_name : token?.type === "gitlab" ? userProfileGitLab?.name : userProfile?.login}
@@ -157,15 +169,29 @@ const GithubDeploy = ({ setValue, services, control }: { setValue: any; services
           }
         </div>
         {selectedTab === "git" && token?.access_token && (
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid gap-6 md:grid-cols-2">
             {token?.type === "github" ? (
               <>
-                <Github setValue={setValue} services={services} control={control} />
+                <Github setValue={setValue} services={services} control={control} setDeploymentName={setDeploymentName} deploymentName={deploymentName} />
               </>
             ) : token?.type === "bitbucket" ? (
-              <Bit loading={fetchingProfileBit} setValue={setValue} services={services} control={control} />
+              <Bit
+                loading={fetchingProfileBit}
+                setValue={setValue}
+                services={services}
+                control={control}
+                setDeploymentName={setDeploymentName}
+                deploymentName={deploymentName}
+              />
             ) : (
-              <GitLab loading={fetchingProfileGitLab} setValue={setValue} services={services} control={control} />
+              <GitLab
+                loading={fetchingProfileGitLab}
+                setValue={setValue}
+                services={services}
+                control={control}
+                setDeploymentName={setDeploymentName}
+                deploymentName={deploymentName}
+              />
             )}
           </div>
         )}

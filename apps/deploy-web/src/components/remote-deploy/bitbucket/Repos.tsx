@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Spinner } from "@akashnetwork/ui/components";
-import { Bitbucket, GithubCircle, Lock } from "iconoir-react";
+import { Bitbucket, Lock } from "iconoir-react";
 import { useAtom } from "jotai";
 import { nanoid } from "nanoid";
 
 import remoteDeployStore from "@src/store/remoteDeployStore";
-const Repos = ({ repos, setValue, isLoading }) => {
+const Repos = ({ repos, setValue, isLoading, deploymentName, setDeploymentName }) => {
   const [open, setOpen] = useState(false);
   console.log(repos);
   const [token] = useAtom(remoteDeployStore.tokens);
@@ -27,6 +27,7 @@ const Repos = ({ repos, setValue, isLoading }) => {
             { id: nanoid(), key: "BRANCH_NAME", value: repos?.values?.find(repo => repo?.links?.self?.href === value)?.mainbranch?.name, isSecret: false },
             { id: nanoid(), key: "ACCESS_TOKEN", value: token?.access_token, isSecret: true }
           ]);
+          if (deploymentName === "GitHub") setDeploymentName(repos?.values?.find(repo => repo?.links?.self?.href === value)?.name);
         }}
       >
         <SelectTrigger className="w-full">

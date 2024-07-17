@@ -5,7 +5,7 @@ import { useAtom } from "jotai";
 import { nanoid } from "nanoid";
 
 import remoteDeployStore from "@src/store/remoteDeployStore";
-const Repos = ({ repos, setValue, isLoading, services }) => {
+const Repos = ({ repos, setValue, isLoading, services, setDeploymentName, deploymentName }) => {
   const [open, setOpen] = useState(false);
   console.log(repos);
   const [token] = useAtom(remoteDeployStore.tokens);
@@ -29,6 +29,7 @@ const Repos = ({ repos, setValue, isLoading, services }) => {
 
             { id: nanoid(), key: "ACCESS_TOKEN", value: token?.access_token, isSecret: false }
           ]);
+          if (deploymentName === "GitHub") setDeploymentName(repos?.find(repo => repo.html_url === value)?.name);
         }}
       >
         <SelectTrigger className="w-full">

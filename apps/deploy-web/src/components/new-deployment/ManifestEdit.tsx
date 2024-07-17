@@ -371,7 +371,14 @@ export const ManifestEdit: React.FunctionComponent<Props> = ({ editedManifest, s
         </ViewPanel>
       )}
       {(hasComponent("ssh") || selectedSdlEditMode === "builder") && (
-        <SdlBuilder sdlString={editedManifest} ref={sdlBuilderRef} github={github} setEditedManifest={setEditedManifest} />
+        <SdlBuilder
+          sdlString={editedManifest}
+          ref={sdlBuilderRef}
+          github={github}
+          setEditedManifest={setEditedManifest}
+          setDeploymentName={setDeploymentName}
+          deploymentName={deploymentName}
+        />
       )}
 
       {isDepositingDeployment && (
