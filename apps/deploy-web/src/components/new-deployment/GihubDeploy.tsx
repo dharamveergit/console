@@ -1,7 +1,7 @@
-import { Dispatch, useEffect, useState } from "react";
 import { Button, Spinner, Tabs, TabsContent, TabsList, TabsTrigger } from "@akashnetwork/ui/components";
 import { Bitbucket, Github as GitIcon, GitlabFull } from "iconoir-react";
 import { useAtom } from "jotai";
+import { Dispatch, useEffect, useState } from "react";
 
 import remoteDeployStore from "@src/store/remoteDeployStore";
 import { Service } from "@src/types";
@@ -92,7 +92,7 @@ const GithubDeploy = ({
                   </button>
                 )}
               </div>
-              <TabsContent value="git" className="mt-8 md:mt-0">
+              <TabsContent value="git" className="mt-8 md:mt-2">
                 {fetchingToken || fetchingProfile || fetchingTokenBit || fetchingProfileBit || fetchingTokenGitLab || fetchingProfileGitLab ? (
                   <div className="flex flex-col items-center justify-center gap-2 rounded border px-5 py-10">
                     <Spinner size="large" />
