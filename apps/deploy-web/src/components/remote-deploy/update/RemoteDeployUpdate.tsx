@@ -81,12 +81,12 @@ const RemoteDeployUpdate = ({
   };
 
   useEffect(() => {
-    if (services?.[0]?.image === "hoomanhq/automation:0.202") {
+    if (services?.[0]?.image === "hoomanhq/automation:0.333") {
       setRemoteDeploy(true);
     }
   }, [services]);
 
-  return services?.[0]?.image === "hoomanhq/automation:0.202" ? (
+  return services?.[0]?.image === "hoomanhq/automation:0.333" ? (
     <div className="flex flex-col gap-6 rounded border bg-card px-6 py-6">
       <EnvFormModal control={control} serviceIndex={0} envs={services[0]?.env ?? []} onClose={() => {}} />
       <div className="flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
