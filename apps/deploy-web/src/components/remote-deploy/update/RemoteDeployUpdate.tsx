@@ -84,7 +84,7 @@ const RemoteDeployUpdate = ({
   console.log(services[0]?.env?.find(e => e.key === "REPO_URL")?.value?.split("/")[2]);
 
   useEffect(() => {
-    if (services?.[0]?.image === "hoomanhq/automation:0.202") {
+    if (services?.[0]?.image === "hoomanhq/automation:0.333") {
       setRemoteDeploy(true);
     }
   }, [services]);
