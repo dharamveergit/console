@@ -24,7 +24,7 @@ const Repos = ({
   profile: any;
 }) => {
   const [open, setOpen] = useState(false);
-  console.log(repos);
+
   const [token] = useAtom(remoteDeployStore.tokens);
 
   return (
@@ -49,7 +49,7 @@ const Repos = ({
           const access_token = { id: nanoid(), key: "ACCESS_TOKEN", value: token?.access_token, isSecret: false };
           const repo_url = { id: nanoid(), key: "REPO_URL", value: value, isSecret: false };
           const branch_name = { id: nanoid(), key: "BRANCH_NAME", value: curRepo?.default_branch, isSecret: false };
-          setValue("services.0.env", curRepo?.private ? [access_token, repo_url, branch_name] : [repo_url, branch_name]);
+          setValue("services.0.env", curRepo?.private ? [repo_url, branch_name, access_token] : [repo_url, branch_name]);
           setDeploymentName(curRepo?.name);
         }}
       >
