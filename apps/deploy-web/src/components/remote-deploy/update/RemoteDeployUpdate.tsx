@@ -10,6 +10,7 @@ import { SdlBuilderFormValues, Service } from "@src/types";
 import { defaultService } from "@src/utils/sdl/data";
 import { generateSdl } from "@src/utils/sdl/sdlGenerator";
 import { importSimpleSdl } from "@src/utils/sdl/sdlImport";
+import { github } from "@src/utils/templates";
 import { useCommits } from "../api/api";
 import { EnvFormModal } from "../EnvFormModal";
 import Branches from "../github/Branches";
@@ -84,12 +85,12 @@ const RemoteDeployUpdate = ({
   console.log(services[0]?.env?.find(e => e.key === "REPO_URL")?.value?.split("/")[2]);
 
   useEffect(() => {
-    if (services?.[0]?.image === "hoomanhq/automation:0.333") {
+    if (github.content.includes(services?.[0]?.image)) {
       setRemoteDeploy(true);
     }
   }, [services]);
 
-  return services?.[0]?.image === "hoomanhq/automation:0.202" ? (
+  return github.content.includes(services?.[0]?.image) ? (
     <div className="flex flex-col gap-6 rounded border bg-card px-4 py-6 md:px-6">
       <EnvFormModal control={control} serviceIndex={0} envs={services[0]?.env ?? []} onClose={() => {}} />
       {/* //type === github */}
