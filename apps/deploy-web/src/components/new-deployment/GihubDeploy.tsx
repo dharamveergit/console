@@ -189,6 +189,7 @@ const GithubDeploy = ({
                 control={control}
                 setDeploymentName={setDeploymentName}
                 deploymentName={deploymentName}
+                profile={userProfileBit}
               />
             ) : (
               <GitLab
