@@ -39,7 +39,7 @@ const Repos = ({
             { id: nanoid(), key: "REPO_URL", value: value, isSecret: false },
             { id: nanoid(), key: "BRANCH_NAME", value: repos?.values?.find(repo => repo?.links?.html?.href === value)?.mainbranch?.name, isSecret: false },
             { id: nanoid(), key: "BITBUCKET_ACCESS_TOKEN", value: token?.access_token, isSecret: false },
-            { id: nanoid(), key: "BITBUCKET_USER", value: currentRepo?.owner?.display_name, isSecret: false }
+            { id: nanoid(), key: "BITBUCKET_USER", value: currentRepo?.owner?.username, isSecret: false }
           ]);
           setDeploymentName(repos?.values?.find(repo => repo?.links?.html?.href === value)?.name);
         }}
