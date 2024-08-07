@@ -1,6 +1,6 @@
 "use client";
 import { Dispatch, SetStateAction, useState } from "react";
-import { Control, Controller, UseFormSetValue, UseFormTrigger } from "react-hook-form";
+import { Control, UseFormSetValue, UseFormTrigger } from "react-hook-form";
 import {
   Button,
   buttonVariants,
@@ -11,7 +11,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
   CustomTooltip,
-  InputWithIcon,
+  FormField,
+  FormInput,
+  FormItem,
+  FormMessage,
+  Input,
   Select,
   SelectContent,
   SelectGroup,
@@ -27,7 +31,7 @@ import Link from "next/link";
 
 import { SSHKeyFormControl } from "@src/components/sdl/SSHKeyFromControl";
 import { useSdlBuilder } from "@src/context/SdlBuilderProvider/SdlBuilderProvider";
-import { SdlBuilderFormValues, Service } from "@src/types";
+import { SdlBuilderFormValuesType, ServiceType } from "@src/types";
 import { GpuVendor } from "@src/types/gpu";
 import { uAktDenom } from "@src/utils/constants";
 import { udenomToDenom } from "@src/utils/mathHelpers";
@@ -51,17 +55,16 @@ import { StorageFormControl } from "./StorageFormControl";
 import { TokenFormControl } from "./TokenFormControl";
 
 type Props = {
-  _services: Service[];
+  _services: ServiceType[];
   serviceIndex: number;
-  control: Control<SdlBuilderFormValues, any>;
-  trigger: UseFormTrigger<SdlBuilderFormValues>;
+  control: Control<SdlBuilderFormValuesType, any>;
+  trigger: UseFormTrigger<SdlBuilderFormValuesType>;
   onRemoveService: (index: number) => void;
   serviceCollapsed: number[];
   setServiceCollapsed: Dispatch<SetStateAction<number[]>>;
-  setValue: UseFormSetValue<SdlBuilderFormValues>;
+  setValue: UseFormSetValue<SdlBuilderFormValuesType>;
   gpuModels: GpuVendor[] | undefined;
   hasSecretOption?: boolean;
-  github?: boolean;
 };
 
 export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
@@ -74,8 +77,7 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
   setServiceCollapsed,
   setValue,
   gpuModels,
-  hasSecretOption,
-  github
+  hasSecretOption
 }) => {
   const [isEditingCommands, setIsEditingCommands] = useState<number | boolean | null>(null);
   const [isEditingEnv, setIsEditingEnv] = useState<number | boolean | null>(null);
@@ -84,7 +86,7 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
   const muiTheme = useMuiTheme();
   const isDesktop = useMediaQuery(muiTheme.breakpoints.up("sm"));
   const expanded = !serviceCollapsed.some(x => x === serviceIndex);
-  const currentService: Service = _services[serviceIndex];
+  const currentService: ServiceType = _services[serviceIndex];
   const _isEditingEnv = serviceIndex === isEditingEnv;
   const _isEditingCommands = serviceIndex === isEditingCommands;
   const _isEditingExpose = serviceIndex === isEditingExpose;
@@ -141,29 +143,11 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
           )}
 
           <div className={cn("flex items-end justify-between p-4", { ["border-b border-muted-foreground/20"]: expanded })}>
-            <Controller
+            <FormField
               control={control}
               name={`services.${serviceIndex}.title`}
-              rules={{
-                required: "Service name is required.",
-                validate: value => {
-                  const hasValidChars = /^[a-z0-9-]+$/.test(value);
-                  const hasValidStartingChar = /^[a-z]/.test(value);
-                  const hasValidEndingChar = !value.endsWith("-");
-
-                  if (!hasValidChars) {
-                    return "Invalid service name. It must only be lower case letters, numbers and dashes.";
-                  } else if (!hasValidStartingChar) {
-                    return "Invalid starting character. It can only start with a lowercase letter.";
-                  } else if (!hasValidEndingChar) {
-                    return "Invalid ending character. It can only end with a lowercase letter or number";
-                  }
-
-                  return true;
-                }
-              }}
-              render={({ field, fieldState }) => (
-                <InputWithIcon
+              render={({ field }) => (
+                <FormInput
                   type="text"
                   label={
                     <div className="inline-flex items-center">
@@ -184,10 +168,6 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
                       </CustomTooltip>
                     </div>
                   }
-                  color="secondary"
-                  // errorMessage={!!fieldState.error}
-                  // helperText={fieldState.error?.message}
-                  error={fieldState.error?.message}
                   value={field.value}
                   className="flex-grow"
                   onChange={event => field.onChange((event.target.value || "").toLowerCase())}
@@ -226,32 +206,16 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <div className="grid gap-4">
-                    {!github && (
-                      <div className="flex items-end">
-                        <Controller
-                          control={control}
-                          name={`services.${serviceIndex}.image`}
-                          rules={{
-                            required: "Docker image name is required.",
-                            validate: value => {
-                              if (imageList) {
-                                return imageList.includes(value);
-                              }
-
-                              const hasValidChars = /^[a-z0-9\-_/:.]+$/.test(value);
-
-                              if (!hasValidChars) {
-                                return "Invalid docker image name.";
-                              }
-
-                              return true;
-                            }
-                          }}
-                          render={({ field, fieldState }) =>
-                            imageList?.length ? (
+                    <div className="flex items-end">
+                      <FormField
+                        control={control}
+                        name={`services.${serviceIndex}.image`}
+                        render={({ field, fieldState }) => (
+                          <FormItem className="w-full">
+                            {imageList?.length ? (
                               <div className="flex flex-grow flex-col">
                                 <Select value={field.value} onValueChange={field.onChange}>
-                                  <SelectTrigger className="ml-1" data-testid="ssh-image-select">
+                                  <SelectTrigger className={cn("ml-1", { "ring-2 ring-destructive": !!fieldState.error })} data-testid="ssh-image-select">
                                     <Image alt="Docker Logo" src="/images/docker.png" layout="fixed" quality={100} width={24} height={18} priority />
                                     <div className="flex-1 pl-2 text-left">
                                       <SelectValue placeholder="Select image" />
@@ -269,10 +233,9 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
                                     </SelectGroup>
                                   </SelectContent>
                                 </Select>
-                                {fieldState.error?.message && <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>}
                               </div>
                             ) : (
-                              <InputWithIcon
+                              <Input
                                 type="text"
                                 label={
                                   <div className="inline-flex items-center">
@@ -292,13 +255,10 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
                                   </div>
                                 }
                                 placeholder="Example: mydockerimage:1.01"
-                                color="secondary"
-                                // error={!!fieldState.error}
-                                disabled={github}
-                                error={fieldState.error?.message}
-                                className="flex-grow"
                                 value={field.value}
+                                error={!!fieldState.error}
                                 onChange={event => field.onChange((event.target.value || "").toLowerCase())}
+                                startIconClassName="pl-2"
                                 startIcon={<Image alt="Docker Logo" src="/images/docker.png" layout="fixed" quality={100} width={24} height={18} priority />}
                                 endIcon={
                                   <Link
@@ -317,11 +277,13 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
                                 }
                                 data-testid="image-name-input"
                               />
-                            )
-                          }
-                        />
-                      </div>
-                    )}
+                            )}
+
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
                     <div>
                       <CpuFormControl control={control as any} currentService={currentService} serviceIndex={serviceIndex} />
@@ -334,16 +296,16 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
                         hasGpu={!!currentService.profile.hasGpu}
                         currentService={currentService}
                         gpuModels={gpuModels}
-                        setValue={setValue}
+                        setValue={setValue as any}
                       />
                     </div>
 
                     <div>
-                      <MemoryFormControl control={control as any} currentService={currentService} serviceIndex={serviceIndex} />
+                      <MemoryFormControl control={control as any} serviceIndex={serviceIndex} />
                     </div>
 
                     <div>
-                      <StorageFormControl control={control as any} currentService={currentService} serviceIndex={serviceIndex} />
+                      <StorageFormControl control={control as any} serviceIndex={serviceIndex} />
                     </div>
 
                     <div>
@@ -353,55 +315,47 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
                 </div>
 
                 <div>
-                  {!github && (
-                    <>
-                      <div className="grid gap-4">
-                        {(hasComponent("ssh") || hasComponent("ssh-toggle")) && (
-                          <FormPaper className="whitespace-break-spaces break-all">
-                            {hasComponent("ssh-toggle") && (
-                              <CheckboxWithLabel
-                                checked={hasComponent("ssh")}
-                                onCheckedChange={() => toggleCmp("ssh")}
-                                className="ml-4"
-                                label="Expose SSH"
-                                data-testid="ssh-toggle"
-                              />
-                            )}
-                            {hasComponent("ssh") && <SSHKeyFormControl control={control} serviceIndex={serviceIndex} setValue={setValue} />}
-                          </FormPaper>
+                  <div className="grid gap-4">
+                    {(hasComponent("ssh") || hasComponent("ssh-toggle")) && (
+                      <FormPaper className="whitespace-break-spaces break-all">
+                        {hasComponent("ssh-toggle") && (
+                          <CheckboxWithLabel
+                            checked={hasComponent("ssh")}
+                            onCheckedChange={checked => {
+                              toggleCmp("ssh");
+                              setValue("hasSSHKey", !!checked);
+                            }}
+                            className="ml-4"
+                            label="Expose SSH"
+                            data-testid="ssh-toggle"
+                          />
                         )}
+                        {hasComponent("ssh") && <SSHKeyFormControl control={control} serviceIndex={serviceIndex} setValue={setValue} />}
+                      </FormPaper>
+                    )}
 
-                        <div>
-                          <EnvVarList currentService={currentService} setIsEditingEnv={setIsEditingEnv} serviceIndex={serviceIndex} />
-                        </div>
+                    <div>
+                      <EnvVarList currentService={currentService} setIsEditingEnv={setIsEditingEnv} serviceIndex={serviceIndex} />
+                    </div>
 
-                        {hasComponent("command") && (
-                          <div>
-                            <CommandList currentService={currentService} setIsEditingCommands={setIsEditingCommands} serviceIndex={serviceIndex} />
-                          </div>
-                        )}
+                    {hasComponent("command") && (
+                      <div>
+                        <CommandList currentService={currentService} setIsEditingCommands={setIsEditingCommands} serviceIndex={serviceIndex} />
                       </div>
+                    )}
+                  </div>
 
-                      <div className="mt-4">
-                        <ExposeList currentService={currentService} setIsEditingExpose={setIsEditingExpose} serviceIndex={serviceIndex} />
-                      </div>
-                    </>
-                  )}
+                  <div className="mt-4">
+                    <ExposeList currentService={currentService} setIsEditingExpose={setIsEditingExpose} serviceIndex={serviceIndex} />
+                  </div>
 
                   {hasComponent("service-count") && (
                     <div className="mt-4">
-                      <Controller
+                      <FormField
                         control={control}
                         name={`services.${serviceIndex}.count`}
-                        rules={{
-                          min: 1,
-                          validate: v => {
-                            if (!v) return "Service count is required.";
-                            return true;
-                          }
-                        }}
-                        render={({ field, fieldState }) => (
-                          <InputWithIcon
+                        render={({ field }) => (
+                          <FormInput
                             type="number"
                             label={
                               <div className="inline-flex items-center">
@@ -427,8 +381,6 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
                               </div>
                             }
                             value={field.value || ""}
-                            // error={!!fieldState.error}
-                            error={fieldState.error?.message}
                             onChange={event => {
                               const newValue = parseInt(event.target.value);
                               field.onChange(newValue);
