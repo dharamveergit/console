@@ -135,13 +135,12 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
           {github && (
             <GithubDeploy
               setValue={setValue}
-              services={_services as Service[]}
+              services={_services as ServiceType[]}
               control={control}
               setDeploymentName={setDeploymentName}
               deploymentName={deploymentName}
             />
           )}
-
           <Form {...form}>
             <form ref={formRef} autoComplete="off">
               {_services &&
@@ -168,7 +167,7 @@ export const SdlBuilder = React.forwardRef<SdlBuilderRefType, Props>(({ sdlStrin
                 </Alert>
               )}
 
-              {!hasComponent("ssh") && (
+              {!hasComponent("ssh") && !github && (
                 <div className="flex items-center justify-end pt-4">
                   <div>
                     <Button variant="default" size="sm" type="button" onClick={onAddService}>
