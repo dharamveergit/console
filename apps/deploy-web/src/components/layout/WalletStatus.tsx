@@ -27,7 +27,7 @@ import { FormattedDecimal } from "../shared/FormattedDecimal";
 import { ConnectWalletButton } from "../wallet/ConnectWalletButton";
 
 export function WalletStatus() {
-  const { walletName, address, walletBalances, logout, isWalletLoaded, isWalletConnected, isManaged, isWalletLoading } = useWallet();
+  const { walletName, address, walletBalances, logout, isWalletLoaded, isWalletConnected, isManaged, isWalletLoading, isTrialing } = useWallet();
   const walletBalance = useTotalWalletBalance();
   const router = useRouter();
   function onDisconnectClick() {
@@ -70,6 +70,7 @@ export function WalletStatus() {
               <div className="flex items-center text-left">
                 <div className="flex items-center text-sm font-bold">
                   <Wallet className="text-xs" />
+                  {isManaged && isTrialing && <p className="ml-2 text-primary">Trial</p>}
                   {!isManaged && (
                     <Link className="ml-2 cursor-pointer leading-4" href={`https://stats.akash.network/addresses/${address}`} target="_blank">
                       <Tooltip>
@@ -119,8 +120,8 @@ export function WalletStatus() {
           </>
         ) : (
           <>
+            {envConfig.NEXT_PUBLIC_BILLING_ENABLED && <ConnectManagedWalletButton className="mr-2 w-full md:w-auto" />}
             <ConnectWalletButton className="w-full md:w-auto" />
-            {envConfig.NEXT_PUBLIC_BILLING_ENABLED && <ConnectManagedWalletButton className="ml-2 w-full md:w-auto" />}
           </>
         )
       ) : (

@@ -27,9 +27,10 @@ describe("wallets", () => {
         headers: new Headers({ "Content-Type": "application/json" })
       });
       const {
-        data: { id: userId }
+        data: { id: userId },
+        token
       } = await userResponse.json();
-      const headers = new Headers({ "Content-Type": "application/json", "x-anonymous-user-id": userId });
+      const headers = new Headers({ "Content-Type": "application/json", authorization: `Bearer ${token}` });
       const createWalletResponse = await app.request("/v1/wallets", {
         method: "POST",
         body: JSON.stringify({ data: { userId } }),
@@ -45,7 +46,8 @@ describe("wallets", () => {
           id: expect.any(Number),
           userId,
           creditAmount: expect.any(Number),
-          address: expect.any(String)
+          address: expect.any(String),
+          isTrialing: true
         }
       });
       expect(await getWalletsResponse.json()).toMatchObject({
@@ -54,7 +56,8 @@ describe("wallets", () => {
             id: expect.any(Number),
             userId,
             creditAmount: expect.any(Number),
-            address: expect.any(String)
+            address: expect.any(String),
+            isTrialing: true
           }
         ]
       });
@@ -63,7 +66,8 @@ describe("wallets", () => {
         userId,
         address: expect.any(String),
         deploymentAllowance: `${config.TRIAL_DEPLOYMENT_ALLOWANCE_AMOUNT}.00`,
-        feeAllowance: `${config.TRIAL_FEES_ALLOWANCE_AMOUNT}.00`
+        feeAllowance: `${config.TRIAL_FEES_ALLOWANCE_AMOUNT}.00`,
+        isTrialing: true
       });
     });
 

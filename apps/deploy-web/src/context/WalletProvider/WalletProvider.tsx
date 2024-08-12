@@ -12,12 +12,14 @@ import { useRouter } from "next/navigation";
 import { event } from "nextjs-google-analytics";
 import { SnackbarKey, useSnackbar } from "notistack";
 
-import { TransactionModal } from "@src/components/layout/TransactionModal";
+import { LoadingState, TransactionModal } from "@src/components/layout/TransactionModal";
 import { useAnonymousUser } from "@src/context/AnonymousUserProvider/AnonymousUserProvider";
 import { useAllowance } from "@src/hooks/useAllowance";
+import { useCustomUser } from "@src/hooks/useCustomUser";
 import { useUsdcDenom } from "@src/hooks/useDenom";
 import { useManagedWallet } from "@src/hooks/useManagedWallet";
 import { getSelectedNetwork, useSelectedNetwork } from "@src/hooks/useSelectedNetwork";
+import { useUser } from "@src/hooks/useUser";
 import { useWhen } from "@src/hooks/useWhen";
 import { txHttpService } from "@src/services/http/http.service";
 import { AnalyticsEvents } from "@src/utils/analytics";
@@ -56,22 +58,28 @@ type ContextType = {
   refreshBalances: (address?: string) => Promise<Balances>;
   isManaged: boolean;
   isWalletLoading: boolean;
+  isTrialing: boolean;
 };
 
 const WalletProviderContext = React.createContext<ContextType>({} as ContextType);
 
+const MESSAGE_STATES: Record<string, LoadingState> = {
+  "/akash.deployment.v1beta3.MsgCloseDeployment": "closingDeployment",
+  "/akash.deployment.v1beta3.MsgCreateDeployment": "searchingProviders",
+  "/akash.market.v1beta4.MsgCreateLease": "creatingDeployment",
+  "/akash.deployment.v1beta3.MsgUpdateDeployment": "updatingDeployment"
+};
+
 export const WalletProvider = ({ children }) => {
   const [walletBalances, setWalletBalances] = useState<Balances | null>(null);
   const [isWalletLoaded, setIsWalletLoaded] = useState<boolean>(true);
-  const [isBroadcastingTx, setIsBroadcastingTx] = useState<boolean>(false);
-  const [isWaitingForApproval, setIsWaitingForApproval] = useState<boolean>(false);
+  const [loadingState, setLoadingState] = useState<LoadingState | undefined>(undefined);
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const signingClient = useRef<SigningStargateClient | null>(null);
   const router = useRouter();
   const { settings } = useSettings();
   const usdcIbcDenom = useUsdcDenom();
-
-  const { user } = useAnonymousUser();
+  const user = useUser();
 
   const userWallet = useSelectedChain();
   const { wallet: managedWallet, isLoading, create, refetch } = useManagedWallet();
@@ -175,40 +183,46 @@ export const WalletProvider = ({ children }) => {
   }
 
   async function signAndBroadcastTx(msgs: EncodeObject[]): Promise<boolean> {
-    setIsWaitingForApproval(true);
     let pendingSnackbarKey: SnackbarKey | null = null;
-    const enqueueTxSnackbar = () => {
-      pendingSnackbarKey = enqueueSnackbar(<Snackbar title="Broadcasting transaction..." subTitle="Please wait a few seconds" showLoading />, {
-        variant: "info",
-        autoHideDuration: null
-      });
-    };
     let txResult: TxOutput;
 
     try {
-      if (user && managedWallet) {
-        enqueueTxSnackbar();
+      if (user.id && managedWallet) {
+        const mainMessage = msgs.find(msg => msg.typeUrl in MESSAGE_STATES);
+
+        if (mainMessage) {
+          setLoadingState(MESSAGE_STATES[mainMessage.typeUrl]);
+        }
+
         txResult = await txHttpService.signAndBroadcastTx({ userId: user.id, messages: msgs });
       } else {
+        const enqueueTxSnackbar = () => {
+          pendingSnackbarKey = enqueueSnackbar(<Snackbar title="Broadcasting transaction..." subTitle="Please wait a few seconds" showLoading />, {
+            variant: "info",
+            autoHideDuration: null
+          });
+        };
+        setLoadingState("waitingForApproval");
         const estimatedFees = await userWallet.estimateFee(msgs);
         const txRaw = await userWallet.sign(msgs, {
           ...estimatedFees,
           granter: feeGranter
         });
 
-        setIsWaitingForApproval(false);
-        setIsBroadcastingTx(true);
+        setLoadingState("broadcasting");
         enqueueTxSnackbar();
         txResult = await userWallet.broadcast(txRaw);
 
-        setIsBroadcastingTx(false);
+        setLoadingState(undefined);
       }
 
       if (txResult.code !== 0) {
         throw new Error(txResult.rawLog);
       }
 
-      showTransactionSnackbar("Transaction success!", "", txResult.transactionHash, "success");
+      if (!managedWallet) {
+        showTransactionSnackbar("Transaction success!", "", txResult.transactionHash, "success");
+      }
 
       event(AnalyticsEvents.SUCCESSFUL_TX, {
         category: "transactions",
@@ -263,8 +277,7 @@ export const WalletProvider = ({ children }) => {
         closeSnackbar(pendingSnackbarKey);
       }
 
-      setIsWaitingForApproval(false);
-      setIsBroadcastingTx(false);
+      setLoadingState(undefined);
     }
   }
 
@@ -337,13 +350,14 @@ export const WalletProvider = ({ children }) => {
         logout,
         signAndBroadcastTx,
         refreshBalances,
-        isManaged: !!managedWallet?.isWalletConnected,
-        isWalletLoading: isLoading
+        isManaged: !!managedWallet,
+        isWalletLoading: isLoading,
+        isTrialing: !!managedWallet?.isTrialing
       }}
     >
       {children}
 
-      <TransactionModal open={isWaitingForApproval || isBroadcastingTx} state={isWaitingForApproval ? "waitingForApproval" : "broadcasting"} />
+      <TransactionModal state={loadingState} />
     </WalletProviderContext.Provider>
   );
 };
