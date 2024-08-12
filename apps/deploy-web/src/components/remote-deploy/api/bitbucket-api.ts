@@ -150,3 +150,23 @@ export const useBitBranches = (repo?: string) => {
     enabled: !!repo && !!token?.access_token && token.type === "bitbucket"
   });
 };
+
+export const useBitPackageJson = (onSettled: (data: any) => void, repo?: string, branch?: string) => {
+  const [token] = useAtom(remoteDeployStore.tokens);
+
+  return useQuery({
+    queryKey: ["packageJson", repo, branch],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/repositories/${repo}/src/${branch}/package.json`, {
+        headers: {
+          Authorization: `Bearer ${token?.access_token}`
+        }
+      });
+      return response.data;
+    },
+    enabled: !!token?.access_token && token.type === "bitbucket" && !!repo && !!branch,
+    onSettled: data => {
+      onSettled(data);
+    }
+  });
+};

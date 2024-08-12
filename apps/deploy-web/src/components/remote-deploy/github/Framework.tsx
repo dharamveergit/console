@@ -1,9 +1,14 @@
 import { useState } from "react";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Spinner } from "@akashnetwork/ui/components";
+import clsx from "clsx";
 import { Globe } from "iconoir-react";
+import { useAtom } from "jotai";
 
+import remoteDeployStore from "@src/store/remoteDeployStore";
 import { ServiceType } from "@src/types";
 import { usePackageJson } from "../api/api";
+import { useBitPackageJson } from "../api/bitbucket-api";
+import { useGitlabPackageJson } from "../api/gitlab-api";
 import { removeInitialUrl } from "../utils";
 const frameworks = [
   {
@@ -42,10 +47,11 @@ const frameworks = [
     value: "other"
   }
 ];
-const Framework = ({ services, setValue }: { services: ServiceType[]; setValue: any }) => {
+const Framework = ({ services, setValue, repos }: { services: ServiceType[]; setValue: any; repos?: any }) => {
   const [data, setData] = useState<any>(null);
-  const selected = removeInitialUrl(services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value);
-  const { isLoading } = usePackageJson(selected ?? "", (data: any) => {
+  const selected = services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value;
+  const [token] = useAtom(remoteDeployStore.tokens);
+  const setValueHandler = (data: any) => {
     setData(data);
     if (data?.dependencies) {
       const cpus = (Object.keys(data?.dependencies ?? {}).length / 10 / 2).toFixed(1);
@@ -53,14 +59,25 @@ const Framework = ({ services, setValue }: { services: ServiceType[]; setValue: 
 
       setValue("services.0.profile.cpu", +cpus > 0.5 ? +cpus : 0.5);
     }
-  });
+  };
 
-  console.log(data);
+  const { isLoading } = usePackageJson(setValueHandler, removeInitialUrl(selected));
+  const { isLoading: gitlabLoading } = useGitlabPackageJson(
+    setValueHandler,
+    repos?.find(e => e.web_url === services?.[0]?.env?.find(e => e.key === "REPO_URL")?.value)?.id
+  );
+
+  const { isLoading: bitbucketLoading } = useBitPackageJson(
+    setValueHandler,
+    removeInitialUrl(selected),
+    services?.[0]?.env?.find(e => e.key === "BRANCH_NAME")?.value
+  );
 
   return (
-    <div className="col-span-2 flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground">
+    <div className={clsx("flex flex-col gap-5 rounded border bg-card px-6 py-6 text-card-foreground", token.type === "github" ? "col-span-2" : "")}>
       <div className="flex flex-col gap-2">
         <h1 className="font-semibold">Build Framework</h1>
+        <p className="text-muted-foreground">Select your build framework</p>
       </div>
 
       <Select
@@ -83,7 +100,7 @@ const Framework = ({ services, setValue }: { services: ServiceType[]; setValue: 
       >
         <SelectTrigger className="w-full">
           <div className="flex items-center gap-2">
-            {isLoading && <Spinner size="small" />}
+            {(isLoading || gitlabLoading || bitbucketLoading) && <Spinner size="small" />}
             <SelectValue placeholder={"Select "} />
           </div>
         </SelectTrigger>

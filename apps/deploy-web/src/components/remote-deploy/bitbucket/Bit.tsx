@@ -2,6 +2,7 @@ import React, { Dispatch, useState } from "react";
 
 import { ServiceType } from "@src/types";
 import { useBitReposByWorkspace } from "../api/bitbucket-api";
+import Framework from "../github/Framework";
 import { ServiceControl } from "../utils";
 import Branches from "./Branches";
 import Repos from "./Repos";
@@ -33,6 +34,7 @@ const Bit = ({
       <WorkSpaces isLoading={loading} workSpaces={workSpace} setWorkSpaces={setWorkSpace} />
       <Repos isLoading={isLoading} repos={repos} setValue={setValue} setDeploymentName={setDeploymentName} deploymentName={deploymentName} profile={profile} />
       <Branches services={services} control={control} />
+      <Framework services={services} setValue={setValue} />
     </>
   );
 };

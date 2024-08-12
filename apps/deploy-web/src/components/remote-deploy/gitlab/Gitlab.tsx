@@ -2,6 +2,7 @@ import React, { Dispatch, useState } from "react";
 
 import { ServiceType } from "@src/types";
 import { useGitLabReposByGroup } from "../api/gitlab-api";
+import Framework from "../github/Framework";
 import { ServiceControl } from "../utils";
 import Branches from "./Branches";
 import Groups from "./Groups";
@@ -36,6 +37,7 @@ const GitLab = ({
         deploymentName={deploymentName}
       />
       <Branches services={services} control={control} repos={repos} />
+      <Framework services={services} setValue={setValue} repos={repos} />
     </>
   );
 };

@@ -94,6 +94,7 @@ export const useFetchAccessToken = () => {
 
 export const useBranches = (repo?: string, fetch?: boolean) => {
   const [token] = useAtom(remoteDeployStore.tokens);
+  console.log(fetch);
 
   return useQuery({
     queryKey: ["branches", repo, token?.access_token],
@@ -129,12 +130,12 @@ export const useCommits = (repo: string, branch: string) => {
   });
 };
 
-export const usePackageJson = (repo: string, onSettled: (data: any) => void) => {
+export const usePackageJson = (onSettled: (data: any) => void, repo?: string) => {
   const [token] = useAtom(remoteDeployStore.tokens);
   return useQuery({
     queryKey: ["packageJson", repo],
     queryFn: async () => {
-      const response = await axios.get(`https://api.github.com/repos/${repo}/contents/package.json`, {
+      const response = await axiosInstance.get(`/repos/${repo}/contents/package.json`, {
         headers: {
           Authorization: `Bearer ${token?.access_token}`
         }
