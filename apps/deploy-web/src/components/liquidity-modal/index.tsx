@@ -1,4 +1,7 @@
 "use client";
+import "@leapwallet/elements/styles.css";
+
+import "@leapwallet/elements/styles.css";
 
 import "@leapwallet/elements/styles.css";
 

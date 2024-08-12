@@ -1,8 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Dispatch, useEffect, useState } from "react";
 import { Button, buttonVariants } from "@akashnetwork/ui/components";
-import { ArrowRight, Cpu, Page, Rocket, Wrench } from "iconoir-react";
-import { NavArrowLeft } from "iconoir-react";
+import { ArrowRight, Cpu, Github, NavArrowLeft, Page, Rocket, Wrench } from "iconoir-react";
 import { useAtom } from "jotai";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,7 +12,7 @@ import sdlStore from "@src/store/sdlStore";
 import { ApiTemplate } from "@src/types";
 import { RouteStepKeys } from "@src/utils/constants";
 import { cn } from "@src/utils/styleUtils";
-import { helloWorldTemplate, ubuntuTemplate } from "@src/utils/templates";
+import { ubuntuTemplate } from "@src/utils/templates";
 import { domainName, NewDeploymentParams, UrlService } from "@src/utils/urlUtils";
 import { CustomNextSeo } from "../shared/CustomNextSeo";
 import { TemplateBox } from "../templates/TemplateBox";
@@ -32,13 +31,19 @@ const previewTemplateIds = [
   "akash-network-awesome-akash-minecraft"
 ];
 
-export const TemplateList: React.FunctionComponent = () => {
+type Props = {
+  setGithub: Dispatch<boolean>;
+};
+export const TemplateList: React.FunctionComponent<Props> = ({ setGithub }) => {
   const { templates } = useTemplates();
   const router = useRouter();
   const [previewTemplates, setPreviewTemplates] = useState<ApiTemplate[]>([]);
   const [, setSdlEditMode] = useAtom(sdlStore.selectedSdlEditMode);
   const previousRoute = usePreviousRoute();
-
+  const handleGithubTemplate = async () => {
+    setGithub(true);
+    router.push(UrlService.newDeployment({ step: RouteStepKeys.editDeployment, type: "github" }));
+  };
   useEffect(() => {
     if (templates) {
       const _previewTemplates = templates.filter(x => previewTemplateIds.some(y => x.id === y));
@@ -74,13 +79,18 @@ export const TemplateList: React.FunctionComponent = () => {
 
       <div className="mb-8">
         <div className="grid grid-cols-1 gap-2 md:grid-cols-4 md:gap-4">
-          <DeployOptionBox
+          {/* <DeployOptionBox
             title={helloWorldTemplate.title}
             description={helloWorldTemplate.description}
             icon={<Rocket className="rotate-45" />}
             onClick={() => router.push(UrlService.newDeployment({ step: RouteStepKeys.editDeployment, templateId: helloWorldTemplate.code }))}
+          /> */}
+          <DeployOptionBox
+            title={"Build and Deploy"}
+            description={"Deploy directly from GitHub/BitBucket/GitLab"}
+            icon={<Rocket />}
+            onClick={handleGithubTemplate}
           />
-
           <DeployOptionBox
             title="Rent GPUs"
             description="Rent GPUs from the Akash Network providers to run your AI workloads."

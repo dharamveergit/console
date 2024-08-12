@@ -21,6 +21,7 @@ export const NewDeploymentContainer: FC = () => {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateCreation | null>(null);
   const [editedManifest, setEditedManifest] = useState<string | null>(null);
+  const [github, setGithub] = useState<boolean>(false);
   const deploySdl = useAtomValue(sdlStore.deploySdl);
   const { getDeploymentData } = useLocalNotes();
   const { getTemplateById } = useTemplates();
@@ -42,6 +43,21 @@ export const NewDeploymentContainer: FC = () => {
       // If it's a deployment from the template gallery, load from template data
       setSelectedTemplate(galleryTemplate as TemplateCreation);
       setEditedManifest(galleryTemplate.content as string);
+    }
+
+    const code = searchParams?.get("code");
+    const type = searchParams?.get("type");
+    const state = searchParams?.get("state");
+
+    if (type === "github" || code || state === "gitlab") {
+      if (state === "gitlab") {
+        router.replace(`/new-deployment?step=${RouteStepKeys.editDeployment}&type=gitlab&code=${code}`);
+      }
+      setSelectedTemplate(hardcodedTemplates.find(t => t.title === "GitHub") as TemplateCreation);
+      setEditedManifest(hardcodedTemplates.find(t => t.title === "GitHub")?.content as string);
+      setGithub(true);
+    } else {
+      setGithub(false);
     }
 
     const queryStep = searchParams?.get("step");
@@ -115,13 +131,15 @@ export const NewDeploymentContainer: FC = () => {
     <Layout isLoading={isLoadingTemplates} isUsingSettings isUsingWallet containerClassName="pb-0">
       <div className="flex w-full items-center">{activeStep !== null && <CustomizedSteppers activeStep={activeStep} />}</div>
 
-      {activeStep === 0 && <TemplateList />}
+      {activeStep === 0 && <TemplateList setGithub={setGithub} />}
       {activeStep === 1 && (
         <ManifestEdit
           selectedTemplate={selectedTemplate}
           onTemplateSelected={setSelectedTemplate}
           editedManifest={editedManifest}
           setEditedManifest={setEditedManifest}
+          setGithub={setGithub}
+          github={github}
         />
       )}
       {activeStep === 2 && <CreateLease dseq={dseq as string} />}
