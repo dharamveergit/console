@@ -26,10 +26,10 @@ export default handleAuth({
               Authorization: `Bearer ${session.accessToken}`
             });
 
-            const anonymousAuthorization = req.headers.authorization;
+            const anonymousId = req.headers["x-anonymous-user-id"];
 
-            if (anonymousAuthorization) {
-              headers.set("x-anonymous-authorization", anonymousAuthorization);
+            if (anonymousId) {
+              headers.set("x-anonymous-user-id", anonymousId);
             }
 
             const userSettings = await axios.post(

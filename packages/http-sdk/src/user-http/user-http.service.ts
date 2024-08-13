@@ -1,5 +1,5 @@
-import { ApiOutput, HttpService } from "@akashnetwork/http-sdk";
-import type { AxiosRequestConfig } from "axios";
+import { ApiHttpService } from "@akashnetwork/http-sdk";
+import { AxiosRequestConfig } from "axios";
 import memoize from "lodash/memoize";
 
 export interface UserOutput {
@@ -16,28 +16,23 @@ export interface UserOutput {
   githubUsername?: string;
 }
 
-export type UserCreateResponse = {
-  data: UserOutput;
-  token: string;
-};
-
-export class UserHttpService extends HttpService {
+export class UserHttpService extends ApiHttpService {
   constructor(config?: AxiosRequestConfig) {
     super(config);
     this.getOrCreateAnonymousUser = memoize(this.getOrCreateAnonymousUser.bind(this));
   }
 
-  async getOrCreateAnonymousUser(id?: string): Promise<UserCreateResponse | ApiOutput<UserOutput>> {
+  async getOrCreateAnonymousUser(id?: string) {
     return await (id ? this.getAnonymousUser(id) : this.createAnonymousUser());
   }
 
   private async createAnonymousUser() {
-    return this.extractData(await this.post<UserCreateResponse>("/v1/anonymous-users"));
+    return this.extractApiData(await this.post<UserOutput>("/v1/anonymous-users"));
   }
 
   private async getAnonymousUser(id: string) {
     try {
-      return this.extractData(await this.get<ApiOutput<UserOutput>>(`/v1/anonymous-users/${id}`));
+      return this.extractApiData(await this.get<UserOutput>(`/v1/anonymous-users/${id}`));
     } catch (error) {
       if (error.response?.status === 404) {
         return this.createAnonymousUser();

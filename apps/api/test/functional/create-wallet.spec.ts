@@ -27,10 +27,9 @@ describe("wallets", () => {
         headers: new Headers({ "Content-Type": "application/json" })
       });
       const {
-        data: { id: userId },
-        token
+        data: { id: userId }
       } = await userResponse.json();
-      const headers = new Headers({ "Content-Type": "application/json", authorization: `Bearer ${token}` });
+      const headers = new Headers({ "Content-Type": "application/json", "x-anonymous-user-id": userId });
       const createWalletResponse = await app.request("/v1/wallets", {
         method: "POST",
         body: JSON.stringify({ data: { userId } }),

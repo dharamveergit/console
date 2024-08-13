@@ -203,4 +203,3 @@ export const monacoOptions = {
 export const txFeeBuffer = 10000; // 10000 uAKT
 
 export const ANONYMOUS_USER_KEY = "anonymous-user";
-export const ANONYMOUS_USER_TOKEN_KEY = "anonymous-user-auth";

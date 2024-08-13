@@ -29,8 +29,8 @@ describe("Wallets Refill", () => {
     it("should refill draining wallets", async () => {
       const prepareRecords = Array.from({ length: 15 }).map(async () => {
         const records = await walletService.createUserAndWallet();
-        const { user, token } = records;
-        let { wallet } = records;
+        const user = records.user;
+        let wallet = records.wallet;
 
         expect(wallet.creditAmount).toBe(config.TRIAL_DEPLOYMENT_ALLOWANCE_AMOUNT + config.TRIAL_FEES_ALLOWANCE_AMOUNT);
         const limits = {
@@ -49,20 +49,20 @@ describe("Wallets Refill", () => {
           },
           { returning: true }
         );
-        wallet = await walletService.getWalletByUserId(user.id, token);
+        wallet = await walletService.getWalletByUserId(user.id);
 
         expect(wallet.creditAmount).toBe(config.DEPLOYMENT_ALLOWANCE_REFILL_THRESHOLD + config.FEE_ALLOWANCE_REFILL_THRESHOLD);
         expect(wallet.isTrialing).toBe(true);
 
-        return { user, token, wallet };
+        return { user, wallet };
       });
 
       const records = await Promise.all(prepareRecords);
       await walletController.refillWallets();
 
       await Promise.all(
-        records.map(async ({ wallet, token, user }) => {
-          wallet = await walletService.getWalletByUserId(user.id, token);
+        records.map(async ({ wallet, user }) => {
+          wallet = await walletService.getWalletByUserId(user.id);
           expect(wallet.creditAmount).toBe(config.DEPLOYMENT_ALLOWANCE_REFILL_AMOUNT + config.FEE_ALLOWANCE_REFILL_AMOUNT);
           expect(wallet.isTrialing).toBe(false);
         })
