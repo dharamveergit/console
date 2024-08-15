@@ -87,7 +87,7 @@ export const SimpleServiceFormControl: React.FunctionComponent<Props> = ({
   const [isEditingPlacement, setIsEditingPlacement] = useState<number | boolean | null>(null);
   const muiTheme = useMuiTheme();
   const isDesktop = useMediaQuery(muiTheme.breakpoints.up("sm"));
-  const expanded = !serviceCollapsed.some(x => x === serviceIndex);
+  const expanded = github ? false : !serviceCollapsed.some(x => x === serviceIndex);
   const currentService: ServiceType = _services[serviceIndex];
   const _isEditingEnv = serviceIndex === isEditingEnv;
   const _isEditingCommands = serviceIndex === isEditingCommands;

@@ -28,6 +28,12 @@ const Details = ({ services, setValue }) => {
           <CollapsibleContent>
             <div className="grid gap-6 p-5 md:grid-cols-2">
               <CustomInput
+                onChange={e => appendEnv("INSTALL_COMMAND", e.target.value, false, setValue, services)}
+                label="Install Command"
+                description="By default we use npm install, Change the version if needed"
+                placeholder="eg. npm install"
+              />
+              <CustomInput
                 onChange={e => appendEnv("BUILD_DIRECTORY", e.target.value, false, setValue, services)}
                 label="Build Directory"
                 description="The custom build directory name for your repo"
@@ -51,12 +57,7 @@ const Details = ({ services, setValue }) => {
                 description="By default we use 21, Change the version if needed"
                 placeholder="eg. 21"
               />
-              <CustomInput
-                onChange={e => appendEnv("INSTALL_COMMAND", e.target.value, false, setValue, services)}
-                label="Install Command"
-                description="By default we use npm install, Change the version if needed"
-                placeholder="eg. npm install"
-              />
+
               {/* <CustomInput
                 onChange={e => appendEnv("COMMIT_HASH", e.target.value, false, setValue, services)}
                 label="Commit Hash"
