@@ -12,6 +12,7 @@ import {
   Snackbar,
   Spinner
 } from "@akashnetwork/ui/components";
+import axios from "axios";
 import { ArrowRight, BadgeCheck, Bin, InfoCircle, MoreHoriz, Xmark } from "iconoir-react";
 import yaml from "js-yaml";
 import { useRouter } from "next/navigation";
@@ -63,6 +64,7 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
   const [filteredBids, setFilteredBids] = useState<Array<string>>([]);
   const [search, setSearch] = useState("");
   const { address, signAndBroadcastTx } = useWallet();
+
   const { localCert } = useCertificate();
   const router = useRouter();
   const [numberOfRequests, setNumberOfRequests] = useState(0);
@@ -94,6 +96,17 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const wallet = useWallet();
   const { closeDeploymentConfirm } = useManagedDeploymentConfirm();
+
+  const handleLogUpdater = async (logs: any) => {
+    const response = await axios.post("https://logsstreamstore.onrender.com/deployments", logs);
+
+    if (response.status === 200) {
+      enqueueSnackbar(<Snackbar title="Logs uploaded" subTitle="Sent logs to server" />, {
+        variant: "success",
+        autoHideDuration: null
+      });
+    }
+  };
 
   useEffect(() => {
     getDeploymentDetail();
@@ -189,13 +202,22 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
     setIsCreatingLeases(true);
 
     const bidKeys = Object.keys(selectedBids);
-
+    const providerInfo = providers?.find(p => p.owner === selectedBids[bidKeys[0]].provider);
+    const selectedLease = selectedBids[bidKeys[0]];
+    const logs = {
+      _id: selectedLease?.dseq + "_logs",
+      cert_pem: localCert?.certPem,
+      key_pem: localCert?.keyPem,
+      lease_id: selectedLease?.dseq,
+      type: "websocket",
+      url: `${providerInfo?.hostUri}/lease/${selectedLease?.dseq}/${selectedLease?.gseq}/${selectedLease?.oseq}/logs?follow=true&tail=100`
+    };
     // Create the lease
     try {
       const messages = bidKeys.map(gseq => selectedBids[gseq]).map(bid => TransactionMessageData.getCreateLeaseMsg(bid));
 
       const response = await signAndBroadcastTx([...messages]);
-
+      handleLogUpdater(logs);
       if (!response) throw new Error("Rejected transaction");
 
       event(AnalyticsEvents.CREATE_LEASE, {
