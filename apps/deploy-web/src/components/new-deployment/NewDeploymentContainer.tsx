@@ -3,9 +3,11 @@ import { FC, useEffect, useState } from "react";
 import { useAtomValue } from "jotai";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { CI_CD_TEMPLATE_ID } from "@src/config/remote-deploy.config";
 import { useLocalNotes } from "@src/context/LocalNoteProvider";
 import { useSdlBuilder } from "@src/context/SdlBuilderProvider";
 import { useTemplates } from "@src/context/TemplatesProvider";
+import { isImageInYaml } from "@src/services/remote-deploy/remote-deployment-controller.service";
 import sdlStore from "@src/store/sdlStore";
 import { TemplateCreation } from "@src/types";
 import { RouteStep } from "@src/types/route-steps.type";
@@ -18,10 +20,12 @@ import { CustomizedSteppers } from "./Stepper";
 import { TemplateList } from "./TemplateList";
 
 export const NewDeploymentContainer: FC = () => {
+  const [isGitProviderTemplate, setIsGitProviderTemplate] = useState<boolean>(false);
   const { isLoading: isLoadingTemplates, templates } = useTemplates();
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateCreation | null>(null);
   const [editedManifest, setEditedManifest] = useState<string | null>(null);
+  const [isInit, setIsInit] = useState(false);
   const deploySdl = useAtomValue(sdlStore.deploySdl);
   const { getDeploymentData } = useLocalNotes();
   const { getTemplateById } = useTemplates();
@@ -31,34 +35,65 @@ export const NewDeploymentContainer: FC = () => {
   const { toggleCmp, hasComponent } = useSdlBuilder();
 
   useEffect(() => {
-    if (!templates) return;
-
-    const redeployTemplate = getRedeployTemplate();
-    const galleryTemplate = getGalleryTemplate();
-
-    if (redeployTemplate) {
-      // If it's a redeployment, set the template from local storage
-      setSelectedTemplate(redeployTemplate as TemplateCreation);
-      setEditedManifest(redeployTemplate.content as string);
-    } else if (galleryTemplate) {
-      // If it's a deployment from the template gallery, load from template data
-      setSelectedTemplate(galleryTemplate as TemplateCreation);
-      setEditedManifest(galleryTemplate.content as string);
-
-      if (galleryTemplate.config?.ssh || (!galleryTemplate.config?.ssh && hasComponent("ssh"))) {
-        toggleCmp("ssh");
-      }
-    }
-
     const queryStep = searchParams?.get("step");
     const _activeStep = getStepIndexByParam(queryStep);
     setActiveStep(_activeStep);
 
-    if ((redeployTemplate || galleryTemplate) && queryStep !== RouteStep.editDeployment) {
-      router.replace(UrlService.newDeployment({ ...searchParams, step: RouteStep.editDeployment }));
+    const redeploy = searchParams?.get("redeploy");
+    const code = searchParams?.get("code");
+    const gitProvider = searchParams?.get("gitProvider");
+    const state = searchParams?.get("state");
+    const templateId = searchParams?.get("templateId");
+    const shouldRedirectToGitlab = !redeploy && state === "gitlab" && code;
+    const isGitProvider = gitProvider === "github" || code || state === "gitlab" || (templateId && templateId === CI_CD_TEMPLATE_ID);
+    if (shouldRedirectToGitlab) {
+      router.replace(
+        UrlService.newDeployment({
+          step: RouteStep.editDeployment,
+          gitProvider: "github",
+          gitProviderCode: code,
+          templateId: CI_CD_TEMPLATE_ID
+        })
+      );
+    } else {
+      if (isGitProvider) {
+        setIsGitProviderTemplate(true);
+      } else {
+        setIsGitProviderTemplate(false);
+      }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!templates || editedManifest || isInit) return;
+
+    const template = getRedeployTemplate() || getGalleryTemplate();
+
+    if (template) {
+      setSelectedTemplate(template as TemplateCreation);
+      setEditedManifest(template.content as string);
+
+      if ("config" in template && (template.config?.ssh || (!template.config?.ssh && hasComponent("ssh")))) {
+        toggleCmp("ssh");
+      }
+      const isRemoteYamlImage = isImageInYaml(template?.content as string, getTemplateById(CI_CD_TEMPLATE_ID)?.deploy);
+      const queryStep = searchParams?.get("step");
+      if (queryStep !== RouteStep.editDeployment) {
+        if (isRemoteYamlImage) {
+          setIsGitProviderTemplate(true);
+        }
+
+        const newParams = isRemoteYamlImage
+          ? { ...searchParams, step: RouteStep.editDeployment, gitProvider: "github" }
+          : { ...searchParams, step: RouteStep.editDeployment };
+
+        router.replace(UrlService.newDeployment(newParams));
+      }
+
+      setIsInit(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, templates]);
+  }, [templates, editedManifest, searchParams, router, toggleCmp, hasComponent, isInit]);
 
   const getRedeployTemplate = () => {
     let template: Partial<TemplateCreation> | null = null;
@@ -128,13 +163,14 @@ export const NewDeploymentContainer: FC = () => {
     <Layout isLoading={isLoadingTemplates} isUsingSettings isUsingWallet containerClassName="pb-0">
       <div className="flex w-full items-center">{activeStep !== null && <CustomizedSteppers activeStep={activeStep} />}</div>
 
-      {activeStep === 0 && <TemplateList />}
+      {activeStep === 0 && <TemplateList onChangeGitProvider={setIsGitProviderTemplate} />}
       {activeStep === 1 && (
         <ManifestEdit
           selectedTemplate={selectedTemplate}
           onTemplateSelected={setSelectedTemplate}
           editedManifest={editedManifest}
           setEditedManifest={setEditedManifest}
+          isGitProviderTemplate={isGitProviderTemplate}
         />
       )}
       {activeStep === 2 && <CreateLease dseq={dseq as string} />}

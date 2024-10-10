@@ -33,14 +33,14 @@ const appHono = new Hono();
 appHono.use(
   "/*",
   cors({
-    origin: env.AKASHLYTICS_CORS_WEBSITE_URLS?.split(",") || ["http://localhost:3000", "http://localhost:3001"]
+    origin: env.CORS_WEBSITE_URLS?.split(",") || ["http://localhost:3000", "http://localhost:3001"]
   })
 );
 
 const { PORT = 3080, BILLING_ENABLED } = process.env;
 
 const scheduler = new Scheduler({
-  healthchecksEnabled: env.HealthchecksEnabled === "true",
+  healthchecksEnabled: env.HEALTHCHECKS_ENABLED === "true",
   errorHandler: (task, error) => {
     console.error(`Task "${task.name}" failed: ${error}`);
     getSentry().captureException(error);
@@ -73,8 +73,8 @@ if (BILLING_ENABLED === "true") {
   const { AuthInterceptor } = require("./auth/services/auth.interceptor");
   appHono.use(container.resolve<HonoInterceptor>(AuthInterceptor).intercept());
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { createWalletRouter, getWalletListRouter, signAndBroadcastTxRouter, checkoutRouter, stripeWebhook } = require("./billing");
-  appHono.route("/", createWalletRouter);
+  const { startTrialRouter, getWalletListRouter, signAndBroadcastTxRouter, checkoutRouter, stripeWebhook } = require("./billing");
+  appHono.route("/", startTrialRouter);
   appHono.route("/", getWalletListRouter);
   appHono.route("/", signAndBroadcastTxRouter);
   appHono.route("/", checkoutRouter);
