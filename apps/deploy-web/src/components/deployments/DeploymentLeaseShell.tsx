@@ -1,7 +1,8 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Button, Spinner } from "@akashnetwork/ui/components";
-import { OpenInWindow, OpenNewWindow } from "iconoir-react";
+import { cn } from "@akashnetwork/ui/utils";
+import { OpenInWindow } from "iconoir-react";
 import Link from "next/link";
 
 import ViewPanel from "@src/components/shared/ViewPanel";
@@ -14,7 +15,6 @@ import { useLeaseStatus } from "@src/queries/useLeaseQuery";
 import { useProviderList } from "@src/queries/useProvidersQuery";
 import { LeaseDto } from "@src/types/deployment";
 import { LeaseShellCode } from "@src/types/shell";
-import { cn } from "@src/utils/styleUtils";
 import { UrlService } from "@src/utils/urlUtils";
 import { LeaseSelect } from "./LeaseSelect";
 import { ServiceSelect } from "./ServiceSelect";
@@ -283,12 +283,7 @@ export const DeploymentLeaseShell: React.FunctionComponent<Props> = ({ leases })
               <ViewPanel stickToBottom className="overflow-hidden">
                 {isConnectionClosed && (
                   <Alert variant="warning" className="rounded-none">
-                    The connection to your Akash Console Shell was lost. (
-                    <Link href={UrlService.faq("shell-lost")} target="_blank" className="inline-flex items-center space-x-2">
-                      <span>More Info</span>
-                      <OpenNewWindow className="text-xs" alignmentBaseline="middle" />
-                    </Link>
-                    )
+                    The connection to your Akash Console Shell was not established or lost.
                   </Alert>
                 )}
                 <XTerm ref={terminalRef} onKey={onTerminalKey} onTerminalPaste={onTerminalPaste} />

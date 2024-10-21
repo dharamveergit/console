@@ -2,13 +2,12 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { certificateManager } from "@akashnetwork/akashjs/build/certificates/certificate-manager";
 import { Snackbar } from "@akashnetwork/ui/components";
-import axios from "axios";
 import { event } from "nextjs-google-analytics";
 import { useSnackbar } from "notistack";
 
-import { networkService } from "@src/services/network/network.service";
-import { RestApiCertificatesResponseType } from "@src/types/certificate";
+import { RestApiCertificate } from "@src/types/certificate";
 import { AnalyticsEvents } from "@src/utils/analytics";
+import { ApiUrlService, loadWithPagination } from "@src/utils/apiUtils";
 import { TransactionMessageData } from "@src/utils/TransactionMessageData";
 import { getStorageWallets, updateWallet } from "@src/utils/walletUtils";
 import { useSettings } from "../SettingsProvider";
@@ -79,10 +78,8 @@ export const CertificateProvider = ({ children }) => {
       setIsLoadingCertificates(true);
 
       try {
-        const response = await axios.get<RestApiCertificatesResponseType>(
-          `${apiEndpoint}/akash/cert/${networkService.networkVersion}/certificates/list?filter.state=valid&filter.owner=${address}`
-        );
-        const certs = (response.data.certificates || []).map(cert => {
+        const certificates = await loadWithPagination<RestApiCertificate[]>(ApiUrlService.certificatesList(apiEndpoint, address), "certificates", 1000);
+        const certs = (certificates || []).map(cert => {
           const parsed = atob(cert.certificate.cert);
           const pem = certificateManager.parsePem(parsed);
 

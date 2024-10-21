@@ -1,0 +1,42 @@
+services:
+  api:
+    restart: always
+    environment:
+      PORT: 3000
+      DB_HOST: db
+    ports:
+      - '3080:3000'
+
+  indexer:
+    restart: always
+    env_file:
+      - .env.sandbox.docker-compose-dev
+
+  provider-proxy:
+    restart: always
+    environment:
+      PORT: 3000
+    ports:
+      - '3040:3000'
+
+  deploy-web:
+    restart: always
+    environment:
+      API_HOST: api
+    env_file:
+      - .env.sandbox.docker-compose-dev
+    ports:
+      - '3000:3000'
+    depends_on:
+      - api
+      - provider-proxy
+
+  stats-web:
+    restart: always
+    env_file:
+      - .env.sandbox.docker-compose-dev
+    ports:
+      - '3001:3000'
+    depends_on:
+      - api
+      - provider-proxy
