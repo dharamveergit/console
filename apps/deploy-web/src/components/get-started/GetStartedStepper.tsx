@@ -1,13 +1,14 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { MdRestartAlt } from "react-icons/md";
-import { Button, buttonVariants, CustomTooltip, Spinner } from "@akashnetwork/ui/components";
+import { Button, buttonVariants, CustomTooltip } from "@akashnetwork/ui/components";
+import { cn } from "@akashnetwork/ui/utils";
 import Step from "@mui/material/Step";
 import StepContent from "@mui/material/StepContent";
 import StepLabel from "@mui/material/StepLabel";
 import Stepper from "@mui/material/Stepper";
 import { Check, HandCard, Rocket, WarningCircle, XmarkCircleSolid } from "iconoir-react";
-import dynamic from "next/dynamic";
+import { useAtom } from "jotai";
 import Link from "next/link";
 
 import { LoginRequiredLink } from "@src/components/user/LoginRequiredLink";
@@ -15,43 +16,27 @@ import { ConnectManagedWalletButton } from "@src/components/wallet/ConnectManage
 import { browserEnvConfig } from "@src/config/browser-env.config";
 import { useChainParam } from "@src/context/ChainParamProvider";
 import { useWallet } from "@src/context/WalletProvider";
+import { useCustomUser } from "@src/hooks/useCustomUser";
+import { useWalletBalance } from "@src/hooks/useWalletBalance";
+import walletStore from "@src/store/walletStore";
 import { RouteStep } from "@src/types/route-steps.type";
 import { udenomToDenom } from "@src/utils/mathHelpers";
 import { uaktToAKT } from "@src/utils/priceUtils";
-import { cn } from "@src/utils/styleUtils";
 import { UrlService } from "@src/utils/urlUtils";
+import LiquidityModal from "../liquidity-modal";
 import { ExternalLink } from "../shared/ExternalLink";
 import { ConnectWalletButton } from "../wallet/ConnectWalletButton";
 import { QontoConnector, QontoStepIcon } from "./Stepper";
 
-const LiquidityModal = dynamic(
-  () =>
-    import("../liquidity-modal")
-      .then(m => {
-        console.log("done");
-        return m;
-      })
-      .catch(e => {
-        console.log("error loading liquidity modal", e);
-        throw e;
-      }),
-  {
-    ssr: false,
-    loading: () => (
-      <Button variant="default" disabled size="sm">
-        <Spinner size="small" className="mr-2" />
-        <span>Get More</span>
-      </Button>
-    )
-  }
-);
-
 export const GetStartedStepper: React.FunctionComponent = () => {
   const [activeStep, setActiveStep] = useState(0);
-  const { isWalletConnected, walletBalances, address, refreshBalances, isManaged: isManagedWallet, isTrialing } = useWallet();
+  const { isWalletConnected, address, isManaged: isManagedWallet, isTrialing } = useWallet();
+  const { refetch: refetchBalances, balance: walletBalance } = useWalletBalance();
   const { minDeposit } = useChainParam();
-  const aktBalance = walletBalances ? uaktToAKT(walletBalances.uakt) : 0;
-  const usdcBalance = walletBalances ? udenomToDenom(walletBalances.usdc) : 0;
+  const aktBalance = walletBalance ? uaktToAKT(walletBalance.balanceUAKT) : 0;
+  const usdcBalance = walletBalance ? udenomToDenom(walletBalance.balanceUUSDC) : 0;
+  const [isSignedInWithTrial] = useAtom(walletStore.isSignedInWithTrial);
+  const { user } = useCustomUser();
 
   useEffect(() => {
     const getStartedStep = localStorage.getItem("getStartedStep");
@@ -121,10 +106,10 @@ export const GetStartedStepper: React.FunctionComponent = () => {
               <LoginRequiredLink
                 className={cn("hover:no-underline", buttonVariants({ variant: "outline", className: "mr-2 border-primary" }))}
                 href="/api/proxy/v1/checkout"
-                message="Sign In or Sign Up to top up your balance"
+                message="Sign In or Sign Up to add funds to your balance"
               >
                 <HandCard className="text-xs text-accent-foreground" />
-                <span className="m-2 whitespace-nowrap text-accent-foreground">Top Up Balance</span>
+                <span className="m-2 whitespace-nowrap text-accent-foreground">Add Funds</span>
               </LoginRequiredLink>
             )}
             <Button variant="default" onClick={handleNext}>
@@ -158,12 +143,20 @@ export const GetStartedStepper: React.FunctionComponent = () => {
                 <span>Billing is not set up</span>
               </div>
 
-              {browserEnvConfig.NEXT_PUBLIC_BILLING_ENABLED && <ConnectManagedWalletButton className="mr-2 w-full md:w-auto" />}
-              <ConnectWalletButton />
+              <div className="flex items-center gap-2">
+                {browserEnvConfig.NEXT_PUBLIC_BILLING_ENABLED && !isSignedInWithTrial && <ConnectManagedWalletButton className="mr-2 w-full md:w-auto" />}
+                <ConnectWalletButton />
+
+                {isSignedInWithTrial && !user && (
+                  <Link className={cn(buttonVariants({ variant: "outline" }))} href={UrlService.login()}>
+                    Sign in
+                  </Link>
+                )}
+              </div>
             </div>
           )}
 
-          {walletBalances && (
+          {walletBalance && (
             <div className="my-4 flex items-center space-x-2">
               {aktBalance >= minDeposit.akt || usdcBalance >= minDeposit.usdc ? (
                 <Check className="text-green-600" />
@@ -171,7 +164,7 @@ export const GetStartedStepper: React.FunctionComponent = () => {
                 <CustomTooltip
                   title={
                     <>
-                      If you don't have {minDeposit.akt} AKT or {minDeposit.usdc} USDC, you can request authorization for some tokens to get started on our{" "}
+                      If you don&apos;t have {minDeposit.akt} AKT or {minDeposit.usdc} USDC, you can request authorization for some tokens to get started on our{" "}
                       <ExternalLink href="https://discord.gg/akash" text="Discord" />.
                     </>
                   }
@@ -188,7 +181,7 @@ export const GetStartedStepper: React.FunctionComponent = () => {
                   You have <strong>{aktBalance}</strong> AKT and <strong>{usdcBalance}</strong> USDC
                 </span>
               )}
-              {!isManagedWallet && <LiquidityModal address={address} aktBalance={aktBalance} refreshBalances={refreshBalances} />}
+              {!isManagedWallet && isWalletConnected && <LiquidityModal address={address} aktBalance={aktBalance} refreshBalances={refetchBalances} />}
             </div>
           )}
         </StepContent>
@@ -237,7 +230,7 @@ export const GetStartedStepper: React.FunctionComponent = () => {
         <StepContent>
           <p className="text-muted-foreground">
             Deploy your first web app on Akash! This is a simple Next.js app and you can see the{" "}
-            <ExternalLink href="https://github.com/maxmaxlabs/hello-akash-world" text="source code here" />.
+            <ExternalLink href="https://github.com/akash-network/hello-akash-world" text="source code here" />.
           </p>
           <div className="my-4 space-x-2">
             <Link

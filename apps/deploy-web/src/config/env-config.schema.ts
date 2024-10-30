@@ -5,6 +5,8 @@ const coercedBoolean = () => z.enum(["true", "false"]).transform(val => val === 
 
 export const browserEnvSchema = z.object({
   NEXT_PUBLIC_MASTER_WALLET_ADDRESS: z.string(),
+  NEXT_PUBLIC_UAKT_TOP_UP_MASTER_WALLET_ADDRESS: z.string(),
+  NEXT_PUBLIC_USDC_TOP_UP_MASTER_WALLET_ADDRESS: z.string(),
   NEXT_PUBLIC_BILLING_ENABLED: coercedBoolean().optional().default("false"),
   NEXT_PUBLIC_MANAGED_WALLET_NETWORK_ID: networkId.optional().default("mainnet"),
   NEXT_PUBLIC_DEFAULT_NETWORK_ID: networkId.optional().default("mainnet"),
@@ -18,7 +20,12 @@ export const browserEnvSchema = z.object({
   NEXT_PUBLIC_BASE_API_MAINNET_URL: z.string().url(),
   NEXT_PUBLIC_BASE_API_TESTNET_URL: z.string().url(),
   NEXT_PUBLIC_BASE_API_SANDBOX_URL: z.string().url(),
-  NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().optional()
+  NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().optional(),
+  NEXT_PUBLIC_REDIRECT_URI: z.string().url(),
+  NEXT_PUBLIC_GITHUB_APP_INSTALLATION_URL: z.string().url(),
+  NEXT_PUBLIC_BITBUCKET_CLIENT_ID: z.string().optional(),
+  NEXT_PUBLIC_GITLAB_CLIENT_ID: z.string().optional(),
+  NEXT_PUBLIC_GITHUB_CLIENT_ID: z.string().optional()
 });
 
 export const serverEnvSchema = browserEnvSchema.extend({
@@ -29,11 +36,24 @@ export const serverEnvSchema = browserEnvSchema.extend({
   AUTH0_CLIENT_ID: z.string(),
   AUTH0_CLIENT_SECRET: z.string(),
   AUTH0_AUDIENCE: z.string(),
-  AUTH0_SCOPE: z.string()
+  AUTH0_SCOPE: z.string(),
+  BASE_API_MAINNET_URL: z.string().url(),
+  BASE_API_TESTNET_URL: z.string().url(),
+  BASE_API_SANDBOX_URL: z.string().url(),
+  GITHUB_CLIENT_SECRET: z.string(),
+  BITBUCKET_CLIENT_SECRET: z.string(),
+  GITLAB_CLIENT_SECRET: z.string()
 });
 
 export type BrowserEnvConfig = z.infer<typeof browserEnvSchema>;
 export type ServerEnvConfig = z.infer<typeof serverEnvSchema>;
 
-export const castToValidatedDuringBuild = (config: Record<string, unknown>) => config as unknown as BrowserEnvConfig;
-export const castToValidatedOnStartup = (config: Record<string, unknown>) => config as unknown as ServerEnvConfig;
+export const validateStaticEnvVars = (config: Record<string, unknown>) => browserEnvSchema.parse(config);
+export const validateRuntimeEnvVars = (config: Record<string, unknown>) => {
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    console.log("Skipping validation of serverEnvConfig during build");
+    return config as ServerEnvConfig;
+  } else {
+    return serverEnvSchema.parse(config);
+  }
+};

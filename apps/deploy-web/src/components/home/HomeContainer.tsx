@@ -1,14 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import React from "react";
-import { Spinner } from "@akashnetwork/ui/components";
 import dynamic from "next/dynamic";
 
 import { Footer } from "@src/components/layout/Footer";
 import { useLocalNotes } from "@src/context/LocalNoteProvider";
 import { useSettings } from "@src/context/SettingsProvider";
 import { useWallet } from "@src/context/WalletProvider";
-import { useBalances } from "@src/queries/useBalancesQuery";
+import { useWalletBalance } from "@src/hooks/useWalletBalance";
 import { useDeploymentList } from "@src/queries/useDeploymentQuery";
 import { useAllLeases } from "@src/queries/useLeaseQuery";
 import { useProviderList } from "@src/queries/useProvidersQuery";
@@ -45,13 +44,12 @@ export function HomeContainer() {
   });
   const { settings, isSettingsInit } = useSettings();
   const { apiEndpoint } = settings;
-  const { data: balances, isFetching: isLoadingBalances, refetch: getBalances } = useBalances(address, { enabled: false });
+  const { balance: walletBalance, isLoading: isLoadingBalances } = useWalletBalance();
   const { data: providers, isFetching: isLoadingProviders } = useProviderList();
   const { data: leases, isFetching: isLoadingLeases, refetch: getLeases } = useAllLeases(address, { enabled: false });
 
   useEffect(() => {
     if (address && isSettingsInit) {
-      getBalances();
       getLeases();
     }
 
@@ -73,12 +71,14 @@ export function HomeContainer() {
         <div className="mb-4">
           <WelcomePanel />
         </div>
-        {isSettingsInit && isWalletLoaded ? (
-          <YourAccount isLoadingBalances={isLoadingBalances} balances={balances} activeDeployments={activeDeployments} leases={leases} providers={providers} />
-        ) : (
-          <div className="flex justify-center p-8">
-            <Spinner size="large" />
-          </div>
+        {isSettingsInit && !!address && (
+          <YourAccount
+            isLoadingBalances={isLoadingBalances}
+            walletBalance={walletBalance}
+            activeDeployments={activeDeployments}
+            leases={leases}
+            providers={providers}
+          />
         )}
       </div>
 

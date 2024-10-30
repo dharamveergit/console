@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Button,
@@ -21,6 +21,7 @@ import { useSnackbar } from "notistack";
 import { LocalCert } from "@src/context/CertificateProvider/CertificateProviderContext";
 import { useWallet } from "@src/context/WalletProvider";
 import { useManagedDeploymentConfirm } from "@src/hooks/useManagedDeploymentConfirm";
+import { useWhen } from "@src/hooks/useWhen";
 import { useBidList } from "@src/queries/useBidQuery";
 import { useDeploymentDetail } from "@src/queries/useDeploymentQuery";
 import { useProviderList } from "@src/queries/useProvidersQuery";
@@ -61,7 +62,7 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
   const [selectedBids, setSelectedBids] = useState<{ [gseq: string]: BidDto }>({});
   const [filteredBids, setFilteredBids] = useState<Array<string>>([]);
   const [search, setSearch] = useState("");
-  const { address, signAndBroadcastTx } = useWallet();
+  const { address, signAndBroadcastTx, isManaged } = useWallet();
   const { localCert } = useCertificate();
   const router = useRouter();
   const [numberOfRequests, setNumberOfRequests] = useState(0);
@@ -77,6 +78,8 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
     },
     enabled: !maxRequestsReached && !isSendingManifest
   });
+  const activeBid = useMemo(() => bids?.find(bid => bid.state === "active"), [bids]);
+  const hasActiveBid = !!activeBid;
   const { data: deploymentDetail, refetch: getDeploymentDetail } = useDeploymentDetail(address, dseq, { refetchOnMount: false, enabled: false });
   const groupedBids =
     bids
@@ -85,16 +88,66 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
         a[b.gseq] = [...(a[b.gseq] || []), b];
         return a as { [key: number]: BidDto };
       }, {} as any) || {};
-  const dseqList = Object.keys(groupedBids).map(g => parseInt(g));
+  const dseqList = Object.keys(groupedBids).map(group => parseInt(group));
+
   const allClosed = (bids?.length || 0) > 0 && bids?.every(bid => bid.state === "closed");
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
-  const wallet = useWallet();
   const { closeDeploymentConfirm } = useManagedDeploymentConfirm();
 
   useEffect(() => {
     getDeploymentDetail();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useWhen(hasActiveBid, () => selectBid(activeBid));
+
+  const sendManifest = useCallback(async () => {
+    setIsSendingManifest(true);
+    const bidKeys = Object.keys(selectedBids);
+
+    const localDeploymentData = getDeploymentLocalData(dseq);
+
+    event(AnalyticsEvents.SEND_MANIFEST, {
+      category: "deployments",
+      label: "Send manifest after creating lease"
+    });
+
+    if (!localDeploymentData || !localDeploymentData.manifest) {
+      return;
+    }
+
+    const sendManifestNotification =
+      !isManaged &&
+      enqueueSnackbar(<Snackbar title="Deploying! 🚀" subTitle="Please wait a few seconds..." showLoading />, {
+        variant: "info",
+        autoHideDuration: null
+      });
+
+    try {
+      const yamlJson = yaml.load(localDeploymentData.manifest);
+      const mani = deploymentData.getManifest(yamlJson, true);
+
+      for (let i = 0; i < bidKeys.length; i++) {
+        const currentBid = selectedBids[bidKeys[i]];
+        const provider = providers?.find(x => x.owner === currentBid.provider);
+
+        if (!provider) {
+          throw new Error("Provider not found");
+        }
+        await sendManifestToProvider(provider, mani, dseq, localCert as LocalCert);
+      }
+      router.replace(UrlService.deploymentDetails(dseq, "EVENTS", "events"));
+    } catch (err) {
+      enqueueSnackbar(<ManifestErrorSnackbar err={err} />, { variant: "error", autoHideDuration: null });
+      console.error(err);
+    } finally {
+      if (sendManifestNotification) {
+        closeSnackbar(sendManifestNotification);
+      }
+
+      setIsSendingManifest(false);
+    }
+  }, [selectedBids, dseq, providers, localCert, isManaged, enqueueSnackbar, closeSnackbar, router]);
 
   // Filter bids
   useEffect(() => {
@@ -124,25 +177,14 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, bids, providers, isFilteringFavorites, isFilteringAudited, favoriteProviders]);
 
-  const handleBidSelected = bid => {
-    setSelectedBids({ ...selectedBids, [bid.gseq]: bid });
+  const selectBid = bid => {
+    setSelectedBids(prev => ({ ...prev, [bid.gseq]: bid }));
   };
-
-  async function sendManifest(providerInfo, manifest) {
-    try {
-      const response = await sendManifestToProvider(providerInfo, manifest, dseq, localCert as LocalCert);
-
-      return response;
-    } catch (err) {
-      enqueueSnackbar(<ManifestErrorSnackbar err={err} />, { variant: "error", autoHideDuration: null });
-      throw err;
-    }
-  }
 
   /**
    * Create the leases
    */
-  async function handleNext() {
+  async function createLease() {
     setIsCreatingLeases(true);
 
     const bidKeys = Object.keys(selectedBids);
@@ -159,48 +201,12 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
         category: "deployments",
         label: "Create lease"
       });
+      await sendManifest();
     } catch (error) {
-      // Rejected transaction
+      console.error(error);
+    } finally {
       setIsCreatingLeases(false);
-      return;
     }
-
-    setIsSendingManifest(true);
-
-    const localDeploymentData = getDeploymentLocalData(dseq);
-    if (localDeploymentData && localDeploymentData.manifest) {
-      // Send the manifest
-      const sendManifestNotification =
-        !wallet.isManaged &&
-        enqueueSnackbar(<Snackbar title="Deploying! 🚀" subTitle="Please wait a few seconds..." showLoading />, {
-          variant: "info",
-          autoHideDuration: null
-        });
-
-      try {
-        const yamlJson = yaml.load(localDeploymentData.manifest);
-        const mani = deploymentData.getManifest(yamlJson, true);
-
-        for (let i = 0; i < bidKeys.length; i++) {
-          const currentBid = selectedBids[bidKeys[i]];
-          const provider = providers?.find(x => x.owner === currentBid.provider);
-          await sendManifest(provider, mani);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-
-      if (sendManifestNotification) {
-        closeSnackbar(sendManifestNotification);
-      }
-    }
-
-    event(AnalyticsEvents.SEND_MANIFEST, {
-      category: "deployments",
-      label: "Send manifest after creating lease"
-    });
-
-    router.replace(UrlService.deploymentDetails(dseq, "EVENTS", "events"));
   }
 
   async function handleCloseDeployment() {
@@ -275,15 +281,17 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
               <Button
                 variant="default"
                 color="secondary"
-                onClick={handleNext}
+                onClick={hasActiveBid ? sendManifest : createLease}
                 className="w-full whitespace-nowrap md:w-auto"
-                disabled={dseqList.some(gseq => !selectedBids[gseq]) || isSendingManifest || isCreatingLeases}
+                disabled={hasActiveBid ? false : dseqList.some(gseq => !selectedBids[gseq]) || isSendingManifest || isCreatingLeases}
+                data-testid="create-lease-button"
               >
-                {isCreatingLeases ? (
+                {isCreatingLeases || isSendingManifest ? (
                   <Spinner size="small" />
                 ) : (
                   <>
-                    Accept Bid{dseqList.length > 1 ? "s" : ""}
+                    {hasActiveBid ? "Re-send Manifest" : "Accept Bid"}
+                    {dseqList.length > 1 ? "s" : ""}
                     <span className="ml-2 flex items-center">
                       <ArrowRight className="text-xs" />
                     </span>
@@ -337,7 +345,12 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
               </div>
 
               <div className="ml-4 flex items-center space-x-2">
-                <Checkbox checked={isFilteringAudited} onCheckedChange={value => setIsFilteringAudited(value as boolean)} id="provider-audited" />
+                <Checkbox
+                  checked={isFilteringAudited}
+                  onCheckedChange={value => setIsFilteringAudited(value as boolean)}
+                  id="provider-audited"
+                  data-testid="create-lease-filter-audited"
+                />
                 <label
                   htmlFor="provider-audited"
                   className="inline-flex cursor-pointer items-center text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -389,7 +402,7 @@ export const CreateLease: React.FunctionComponent<Props> = ({ dseq }) => {
               key={gseq}
               gseq={gseq}
               bids={groupedBids[gseq]}
-              handleBidSelected={handleBidSelected}
+              handleBidSelected={selectBid}
               selectedBid={selectedBids[gseq]}
               disabled={isSendingManifest}
               providers={providers}
