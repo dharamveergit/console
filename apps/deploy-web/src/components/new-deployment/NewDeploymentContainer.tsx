@@ -1,5 +1,5 @@
 "use client";
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { useAtomValue } from "jotai";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -20,187 +20,90 @@ import { ManifestEdit } from "./ManifestEdit";
 import { CustomizedSteppers } from "./Stepper";
 import { TemplateList } from "./TemplateList";
 
-const DEBUG = process.env.NODE_ENV === "development";
-
-interface TemplateState {
-  initialized: boolean;
-  loading: boolean;
-  error: string | null;
-  retryCount: number;
-}
-
 export const NewDeploymentContainer: FC = () => {
   const [isGitProviderTemplate, setIsGitProviderTemplate] = useState<boolean>(false);
-  const { isLoading: isLoadingTemplates, templates, getTemplateById } = useTemplates();
+  const { isLoading: isLoadingTemplates, templates } = useTemplates();
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateCreation | null>(null);
   const [editedManifest, setEditedManifest] = useState<string | null>(null);
-  const [templateState, setTemplateState] = useState<TemplateState>({
-    initialized: false,
-    loading: false,
-    error: null,
-    retryCount: 0
-  });
-
   const deploySdl = useAtomValue(sdlStore.deploySdl);
   const { getDeploymentData } = useLocalNotes();
+  const { getTemplateById } = useTemplates();
   const router = useRouter();
   const searchParams = useSearchParams();
   const dseq = searchParams?.get("dseq");
   const { toggleCmp, hasComponent } = useSdlBuilder();
 
-  const logDebug = useCallback((message: string, data?: any) => {
-    if (DEBUG) {
-      console.log(`[NewDeploymentContainer] ${message}`, data || "");
-    }
-  }, []);
-
-  const handleError = useCallback(
-    (error: Error) => {
-      logDebug("Error:", error);
-      setTemplateState(prev => ({
-        ...prev,
-        error: error.message,
-        loading: false
-      }));
-    },
-    [logDebug]
-  );
-
-  // Step 1: Parse URL parameters and set initial state
   useEffect(() => {
-    try {
-      const queryStep = searchParams?.get("step");
-      const code = searchParams?.get("code");
-      const gitProvider = searchParams?.get("gitProvider");
-      const state = searchParams?.get("state");
-      const templateId = searchParams?.get("templateId");
-      const redeploy = searchParams?.get("redeploy");
+    const queryStep = searchParams?.get("step");
+    const activeStepIndex = getStepIndexByParam(queryStep as RouteStep);
+    setActiveStep(activeStepIndex);
 
-      logDebug("URL Parameters:", { queryStep, code, gitProvider, state, templateId });
+    const redeployParam = searchParams?.get("redeploy");
+    const gitProviderCode = searchParams?.get("code");
+    const gitProvider = searchParams?.get("gitProvider");
+    const gitProviderState = searchParams?.get("state");
+    const templateId = searchParams?.get("templateId");
 
-      const _activeStep = getStepIndexByParam(queryStep as RouteStep);
-      setActiveStep(_activeStep);
+    const shouldRedirectGitLabFlow = !redeployParam && gitProviderState === "gitlab" && gitProviderCode;
 
-      const shouldRedirectToGitlab = !redeploy && state === "gitlab" && code;
-      const isGitProvider = gitProvider === "github" || code || state === "gitlab" || (templateId && templateId === CI_CD_TEMPLATE_ID);
+    const isGitProviderTemplate =
+      gitProvider === "github" || gitProviderCode || gitProviderState === "gitlab" || (templateId && templateId === CI_CD_TEMPLATE_ID);
 
-      if (shouldRedirectToGitlab) {
-        router.replace(
-          UrlService.newDeployment({
-            step: RouteStep.editDeployment,
-            gitProvider: "github",
-            gitProviderCode: code,
-            templateId: CI_CD_TEMPLATE_ID
-          })
-        );
-      } else {
-        setIsGitProviderTemplate(!!isGitProvider);
-        // Reset template state when URL parameters change
-        setTemplateState(prev => ({
-          ...prev,
-          initialized: false,
-          loading: false,
-          error: null
-        }));
-      }
-    } catch (error) {
-      handleError(error as Error);
+    if (shouldRedirectGitLabFlow) {
+      router.replace(
+        UrlService.newDeployment({
+          step: RouteStep.editDeployment,
+          gitProvider: "github",
+          gitProviderCode,
+          templateId: CI_CD_TEMPLATE_ID
+        })
+      );
+    } else {
+      setIsGitProviderTemplate(!!isGitProviderTemplate);
     }
-  }, [searchParams, router, logDebug, handleError]);
+  }, [searchParams]);
 
-  // Step 2: Template initialization
-  const initializeTemplate = useCallback(async () => {
-    try {
-      logDebug("Starting template initialization");
-
-      const templateId = searchParams?.get("templateId");
-      const isCreating = !!activeStep && activeStep > getStepIndexByParam(RouteStep.chooseTemplate);
-
-      if (isCreating && !!editedManifest && !!templateId) {
-        logDebug("Template already initialized");
-        return;
-      }
-
-      setTemplateState(prev => ({ ...prev, loading: true }));
-
-      const template = getRedeployTemplate() || getGalleryTemplate() || deploySdl;
-      logDebug("Selected template:", template);
-
-      if (!template) {
-        logDebug("No template found");
-        setTemplateState(prev => ({
-          ...prev,
-          loading: false,
-          error: "No template found"
-        }));
-        return;
-      }
-
-      const isUserTemplate = template?.code === USER_TEMPLATE_CODE;
-      const isUserTemplateInit = isUserTemplate && !!editedManifest;
-
-      if (isUserTemplateInit) {
-        logDebug("User template already initialized");
-        return;
-      }
-
-      setSelectedTemplate(template as TemplateCreation);
-      setEditedManifest(template.content as string);
-
-      if ("config" in template && (template.config?.ssh || (!template.config?.ssh && hasComponent("ssh")))) {
-        toggleCmp("ssh");
-      }
-
-      const isRemoteYamlImage = template.content ? isImageInYaml(template.content as string, getTemplateById(CI_CD_TEMPLATE_ID)?.deploy) : false;
-
-      const queryStep = searchParams?.get("step");
-      if (queryStep !== RouteStep.editDeployment) {
-        const newParams = isRemoteYamlImage ? { step: RouteStep.editDeployment, gitProvider: "github" } : { step: RouteStep.editDeployment };
-
-        router.replace(UrlService.newDeployment(newParams));
-      }
-
-      setTemplateState(prev => ({
-        ...prev,
-        initialized: true,
-        loading: false,
-        error: null
-      }));
-
-      logDebug("Template initialization completed");
-    } catch (error) {
-      handleError(error as Error);
-
-      // Implement retry logic
-      if (templateState.retryCount < 3) {
-        logDebug("Retrying template initialization");
-        setTimeout(() => {
-          setTemplateState(prev => ({
-            ...prev,
-            retryCount: prev.retryCount + 1,
-            initialized: false,
-            loading: false
-          }));
-        }, 1000); // Retry after 1 second
-      }
-    }
-  }, [searchParams, activeStep, editedManifest, deploySdl, getTemplateById, hasComponent, toggleCmp, router, templateState.retryCount, logDebug, handleError]);
-
-  // Step 3: Watch for template loading state
   useEffect(() => {
-    if (!isLoadingTemplates && templates && !templateState.initialized && !templateState.loading) {
-      logDebug("Templates loaded, triggering initialization");
-      initializeTemplate();
-    }
-  }, [isLoadingTemplates, templates, templateState.initialized, templateState.loading, initializeTemplate, logDebug]);
+    const templateId = searchParams?.get("templateId");
+    const isCreating = !!activeStep && activeStep > getStepIndexByParam(RouteStep.chooseTemplate);
+    if (!templates || (isCreating && !!editedManifest && !!templateId)) return;
 
-  const getRedeployTemplate = useCallback(() => {
+    const template = getRedeployTemplate() || getGalleryTemplate() || deploySdl;
+    const isUserTemplate = template?.code === USER_TEMPLATE_CODE;
+    const isUserTemplateInit = isUserTemplate && !!editedManifest;
+    if (!template || isUserTemplateInit) return;
+
+    setSelectedTemplate(template as TemplateCreation);
+    setEditedManifest(template.content as string);
+
+    if ("config" in template && (template.config?.ssh || (!template.config?.ssh && hasComponent("ssh")))) {
+      toggleCmp("ssh");
+    }
+
+    const cicdTemplate = getTemplateById(CI_CD_TEMPLATE_ID);
+    const isRemoteYamlImage = isImageInYaml(template?.content as string, cicdTemplate?.deploy);
+    const queryStep = searchParams?.get("step");
+    if (queryStep !== RouteStep.editDeployment) {
+      if (isRemoteYamlImage) {
+        setIsGitProviderTemplate(true);
+      }
+
+      const newParams = isRemoteYamlImage
+        ? { ...searchParams, step: RouteStep.editDeployment, gitProvider: "github" }
+        : { ...searchParams, step: RouteStep.editDeployment };
+
+      router.replace(UrlService.newDeployment(newParams));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templates, editedManifest, searchParams, router, toggleCmp, hasComponent, activeStep]);
+
+  const getRedeployTemplate = () => {
     let template: Partial<TemplateCreation> | null = null;
     const queryRedeploy = searchParams?.get("redeploy");
-
     if (queryRedeploy) {
       const deploymentData = getDeploymentData(queryRedeploy as string);
+
       if (deploymentData && deploymentData.manifest) {
         template = {
           name: deploymentData.name,
@@ -211,9 +114,9 @@ export const NewDeploymentContainer: FC = () => {
     }
 
     return template;
-  }, [searchParams, getDeploymentData]);
+  };
 
-  const getGalleryTemplate = useCallback((): Partial<{
+  const getGalleryTemplate = (): Partial<{
     code: string;
     name: string;
     content: string;
@@ -221,21 +124,26 @@ export const NewDeploymentContainer: FC = () => {
     config: { ssh?: boolean };
   }> | null => {
     const queryTemplateId = searchParams?.get("templateId");
-    if (!queryTemplateId) return null;
+    if (queryTemplateId) {
+      const templateById = getTemplateById(queryTemplateId as string);
+      if (templateById) {
+        return {
+          code: "empty",
+          name: templateById.name,
+          content: templateById.deploy,
+          valuesToChange: templateById.valuesToChange || [],
+          config: templateById.config
+        };
+      }
 
-    const templateById = getTemplateById(queryTemplateId as string);
-    if (templateById) {
-      return {
-        code: "empty",
-        name: templateById.name,
-        content: templateById.deploy,
-        valuesToChange: templateById.valuesToChange || [],
-        config: templateById.config
-      };
+      const hardCodedTemplate = hardcodedTemplates.find(t => t.code === queryTemplateId);
+      if (hardCodedTemplate) {
+        return hardCodedTemplate;
+      }
     }
 
-    return hardcodedTemplates.find(t => t.code === queryTemplateId) || null;
-  }, [searchParams, getTemplateById]);
+    return null;
+  };
 
   function getStepIndexByParam(step: (typeof RouteStep)[keyof typeof RouteStep] | null) {
     switch (step) {
@@ -250,7 +158,7 @@ export const NewDeploymentContainer: FC = () => {
   }
 
   return (
-    <Layout isUsingSettings isUsingWallet containerClassName="pb-0 h-full">
+    <Layout isLoading={isLoadingTemplates} isUsingSettings isUsingWallet containerClassName="pb-0 h-full">
       {!!activeStep && (
         <div className="flex w-full items-center">
           <CustomizedSteppers activeStep={activeStep} />
