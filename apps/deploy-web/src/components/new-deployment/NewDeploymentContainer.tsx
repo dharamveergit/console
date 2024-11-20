@@ -36,37 +36,34 @@ export const NewDeploymentContainer: FC = () => {
 
   useEffect(() => {
     const queryStep = searchParams?.get("step");
-    const activeStepIndex = getStepIndexByParam(queryStep as RouteStep);
-    setActiveStep(activeStepIndex);
+    const _activeStep = getStepIndexByParam(queryStep as RouteStep);
+    setActiveStep(_activeStep);
 
-    const redeployParam = searchParams?.get("redeploy");
-    const gitProviderCode = searchParams?.get("code");
+    const redeploy = searchParams?.get("redeploy");
+    const code = searchParams?.get("code");
     const gitProvider = searchParams?.get("gitProvider");
-    const gitProviderState = searchParams?.get("state");
+    const state = searchParams?.get("state");
     const templateId = searchParams?.get("templateId");
-
-    const shouldRedirectGitLabFlow = !redeployParam && gitProviderState === "gitlab" && gitProviderCode;
-
-    const isGitProviderTemplate =
-      gitProvider === "github" || gitProviderCode || gitProviderState === "gitlab" || (templateId && templateId === CI_CD_TEMPLATE_ID);
-
-    if (shouldRedirectGitLabFlow) {
+    const shouldRedirectToGitlab = !redeploy && state === "gitlab" && code;
+    const isGitProvider = gitProvider === "github" || code || state === "gitlab" || (templateId && templateId === CI_CD_TEMPLATE_ID);
+    if (shouldRedirectToGitlab) {
       router.replace(
         UrlService.newDeployment({
           step: RouteStep.editDeployment,
           gitProvider: "github",
-          gitProviderCode,
+          gitProviderCode: code,
           templateId: CI_CD_TEMPLATE_ID
         })
       );
     } else {
-      setIsGitProviderTemplate(!!isGitProviderTemplate);
+      setIsGitProviderTemplate(!!isGitProvider);
     }
   }, [searchParams]);
 
   useEffect(() => {
     const templateId = searchParams?.get("templateId");
     const isCreating = !!activeStep && activeStep > getStepIndexByParam(RouteStep.chooseTemplate);
+
     if (!templates || (isCreating && !!editedManifest && !!templateId)) return;
 
     const template = getRedeployTemplate() || getGalleryTemplate() || deploySdl;
