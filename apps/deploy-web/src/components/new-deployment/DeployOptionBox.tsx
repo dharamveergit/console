@@ -1,5 +1,6 @@
 "use client";
 import { Card, CardContent, CardFooter, CardHeader } from "@akashnetwork/ui/components";
+import { cn } from "@akashnetwork/ui/utils";
 import Image from "next/image";
 
 type Props = {
@@ -10,11 +11,16 @@ type Props = {
   onClick: () => void;
   children?: React.ReactNode;
   testId?: string;
+  disabled?: boolean;
 };
 
-export const DeployOptionBox: React.FunctionComponent<Props> = ({ title, description, topIcons, bottomIcons, onClick, testId }) => {
+export const DeployOptionBox: React.FunctionComponent<Props> = ({ title, description, topIcons, bottomIcons, onClick, testId, disabled }) => {
   return (
-    <Card className="min-h-[100px] cursor-pointer text-center hover:bg-secondary/60 dark:hover:bg-secondary/30" onClick={onClick} data-testid={testId}>
+    <Card
+      className={cn("min-h-[100px] cursor-pointer text-center hover:bg-secondary/60 dark:hover:bg-secondary/30", disabled && "cursor-not-allowed opacity-50")}
+      onClick={onClick}
+      data-testid={testId}
+    >
       <CardHeader className="pb-2">
         <div className="mb-2 flex items-center justify-center">
           <div className="flex items-center space-x-2 rounded-sm bg-secondary p-1">

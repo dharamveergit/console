@@ -46,6 +46,7 @@ export const TemplateList: React.FunctionComponent<Props> = ({ onChangeGitProvid
   const [, setSdlEditMode] = useAtom(sdlStore.selectedSdlEditMode);
 
   const handleGithubTemplate = async () => {
+    if (templates?.length === 0) return;
     onChangeGitProvider(true);
     router.push(UrlService.newDeployment({ step: RouteStep.editDeployment, gitProvider: "github", templateId: CI_CD_TEMPLATE_ID }));
   };
@@ -93,6 +94,7 @@ export const TemplateList: React.FunctionComponent<Props> = ({ onChangeGitProvid
       <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="col-span-3 grid grid-cols-1 gap-4 md:col-span-1">
           <DeployOptionBox
+            disabled={templates?.length === 0}
             title="Build & Deploy"
             description="Build & Deploy directly from a code repository (VCS)"
             topIcons={["/images/github.png", "/images/gitlab.png", "/images/bitbucket.png"]}
