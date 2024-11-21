@@ -46,7 +46,6 @@ export const TemplateList: React.FunctionComponent<Props> = ({ onChangeGitProvid
   const [, setSdlEditMode] = useAtom(sdlStore.selectedSdlEditMode);
 
   const handleGithubTemplate = async () => {
-    if (templates?.length === 0) return;
     onChangeGitProvider(true);
     router.push(UrlService.newDeployment({ step: RouteStep.editDeployment, gitProvider: "github", templateId: CI_CD_TEMPLATE_ID }));
   };

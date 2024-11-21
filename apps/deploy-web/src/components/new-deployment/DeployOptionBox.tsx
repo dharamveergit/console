@@ -18,7 +18,7 @@ export const DeployOptionBox: React.FunctionComponent<Props> = ({ title, descrip
   return (
     <Card
       className={cn("min-h-[100px] cursor-pointer text-center hover:bg-secondary/60 dark:hover:bg-secondary/30", disabled && "cursor-not-allowed opacity-50")}
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
       data-testid={testId}
     >
       <CardHeader className="pb-2">
